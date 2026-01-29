@@ -40,7 +40,38 @@ DESCRIPTION_2 = <null>
 PART_NUMBER = J12TTF
 PTC_WM_NAME = ssp-j12ttf_brnch_tee_12.prt
 
+## Deliverables
+Initially we will be creating the following scripts:
+### param_xml_to_xls
+    Takes an xml file exported from creo and converts it to a spreadsheet that sorts the parameters into a table with the following columns (in this order)
+    PTC_WM_NAME | CAGE_CODE | PART_NUMBER | DESCRIPTION_1 | DESCRIPTION_2
+    
+    PTC_WM_NAME should not be editable
 
+    All fields should be explicitly formatted as text.
+
+    Tool should open a dialog box that allows the selection of an xml file and create an xls file or sheet with the same name.
+
+### param_xls_to_xml
+    Takes the xls file and re-sorts it back into a properly formatted xml file that retains the object>parameter-name order required for proper import
+    Checks the original xml file to ensure there are no errors (covered in edge cases)
+    The new xml file should have the same name as the original concatenated with the string "_FILLED"
+    
+## Edge Cases
+Some possible edge cases that need to be considered, and the method to handle them
+### Blank fields
+    Many fields may be blank when the xml is exported from creo, with only PTC_WM_NAME being assured to be filled as it relates to the file name. When converting to xls these should appear as blank cells.
+    When exporting back to xml from xls, only DESCRIPTION_2 may be left blank. Attempting to export an xls file with illegal blank fields should spit an error that requires the user to confirm or cancel.
+    If a cell is left blank when exporting to xml (either an allowed field like DESCRIPTION_2 or from the user aknowledging the error and continuing anyways), populate that parameter in the xml but use the <Value></Value> format
+    
+### New fields or lines not in the original xml file
+    It may occur that the user accidentally changes the column names or re-orders them, the tool should avoid this edge case completely by matching the columns by number in order, not name. If a mismatch occurs just spit an warning
+    The tool will also check that the number of values in the spreadsheet matches the number of parameters in the original xml file. This accounts for the user accidentally adding or removing rows and should spit a warning if a mismatch occurs
+    The tool should lock the first row and column of the sheet to avoid this altogether
+
+## Mismatched PTC_WM_NAME
+    This should not occur due to the lock on the first column 
+    
 ## AI Guidance
 
 * Ignore GEMINI.md and GEMINI-*.md files
