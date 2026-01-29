@@ -15,6 +15,10 @@ Tools for managing Creo Parametric model parameters via a macro-enabled Excel wo
 | `param_manager.xlsm` | Main macro-enabled workbook with VBA code for import/export |
 | `example.xml` | Sample Creo parameter export for testing |
 | `rp_config.xml` | Creo parameter dialog filter configuration |
+| `vba/modParamManager.bas` | Main VBA module: import, export, list refresh logic |
+| `vba/ThisWorkbook.cls` | Workbook events: auto-refresh on open/activate |
+| `vba/Sheet1_Manager.cls` | Sheet events: button click handlers (optional) |
+| `vba/INSTALL.txt` | Installation instructions for VBA modules |
 
 ## XML Structure (Critical)
 
@@ -82,7 +86,21 @@ When exporting from spreadsheet back to XML:
 
 ## VBA Development Notes
 
-- XML processing via MSXML2.DOMDocument
-- ListBox controls: Use ActiveX for programmatic population and selection access
+- XML processing via MSXML2.DOMDocument60
+- ListBox controls: ActiveX (`ListBox1` for XML files, `ListBox2` for sheets)
 - **Refresh strategy:** Combined approach — `Workbook_Activate` event auto-refreshes XML file list, plus manual Refresh button for on-demand updates
 - **Dynamic field detection:** Iterate XML parameter names until first duplicate to determine group size
+
+### VBA Module Structure
+
+| Module | Key Procedures |
+|--------|----------------|
+| `modParamManager` | `ImportXML`, `ExportXML`, `RefreshXMLFileList`, `RefreshSheetList` |
+| `ThisWorkbook` | `Workbook_Open`, `Workbook_Activate` events |
+
+### Key Constants (in modParamManager)
+
+```vba
+PRIORITY_FIELDS = "PTC_WM_NAME,CAGE_CODE,PART_NUMBER,DESCRIPTION_1,DESCRIPTION_2"
+REQUIRED_FIELDS = "CAGE_CODE,DESCRIPTION_1,PART_NUMBER,PTC_WM_NAME"
+```
