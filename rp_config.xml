@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<parameter_ui_configuration>
+    <dialog_type name="PARAMETER DIALOG">
+        <dialog_size>
+            <height>527</height>
+            <width>1098</width>
+        </dialog_size>
+        <dialog_location>
+            <horizontal_pos>1462</horizontal_pos>
+            <vertical_pos>459</vertical_pos>
+        </dialog_location>
+        <layout_visibility>
+            <parameters>Yes</parameters>
+            <relations>No</relations>
+        </layout_visibility>
+        <displayed_columns/>
+        <sortby>
+            <column name="owner" order="Ascend"/>
+        </sortby>
+        <filters>
+            <filter name="Default" source="Standard">
+                <table_id>Parameter Rule</table_id>
+            </filter>
+            <filter name="Current and all subcontexts" source="Standard">
+                <table_id>Parameter Rule</table_id>
+            </filter>
+            <filter name="Current and assy level features" source="Standard">
+                <table_id>Parameter Rule</table_id>
+            </filter>
+            <filter name="Current and submodels" source="Standard">
+                <table_id>Parameter Rule</table_id>
+            </filter>
+            <filter name="Current and subfeatures" source="Standard">
+                <table_id>Parameter Rule</table_id>
+            </filter>
+            <filter name="Current and annotation features" source="Standard">
+                <table_id>Parameter Rule</table_id>
+            </filter>
+            <filter name="Current and annotation elements" source="Standard">
+                <table_id>Parameter Rule</table_id>
+            </filter>
+            <filter name="Current and subgeometry" source="Standard">
+                <table_id>Parameter Rule</table_id>
+            </filter>
+            <filter name="User Defined1" source="User Defined">
+                <table_id>Parameter Rule</table_id>
+                <context>1</context>
+                <scope>Filter in current and all sub levels</scope>
+                <rules>
+                    <rule add_rule_as="OR">
+                        <rule_id>owner type</rule_id>
+                        <condition>=</condition>
+                        <value type="int">2</value>
+                    </rule>
+                    <rule add_rule_as="OR">
+                        <rule_id>owner type</rule_id>
+                        <condition>=</condition>
+                        <value type="int">1</value>
+                    </rule>
+                    <rule add_rule_as="ADD">
+                        <rule_id>name</rule_id>
+                        <condition>=*</condition>
+                        <value type="string">PTC_WM_NAME</value>
+                    </rule>
+                    <rule add_rule_as="OR">
+                        <rule_id>name</rule_id>
+                        <condition>=*</condition>
+                        <value type="string">CAGE_CODE</value>
+                    </rule>
+                    <rule add_rule_as="OR">
+                        <rule_id>name</rule_id>
+                        <condition>=*</condition>
+                        <value type="string">PART_NUMBER</value>
+                    </rule>
+                    <rule add_rule_as="OR">
+                        <rule_id>name</rule_id>
+                        <condition>=*</condition>
+                        <value type="string">DESCRIPTION_1</value>
+                    </rule>
+                </rules>
+            </filter>
+        </filters>
+        <current_filter name="User Defined1"/>
+        <hidden_filter value="No"/>
+    </dialog_type>
+</parameter_ui_configuration>
