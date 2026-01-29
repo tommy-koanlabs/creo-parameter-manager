@@ -18,13 +18,13 @@ Tools for managing Creo Parametric model parameters via a macro-enabled Excel wo
 
 ## XML Structure (Critical)
 
-Creo exports parameters in **flat sequential order** with no grouping tags. Parameters are grouped by CAD object using sort order only:
+Creo exports parameters in **flat sequential order** with no grouping tags. Parameters are grouped by CAD object using sort order only. The field list is **dynamic** — detect the group size by finding the first duplicate parameter name:
 
 ```
-CAGE_CODE → DESCRIPTION_1 → DESCRIPTION_2 → PART_NUMBER → PTC_WM_NAME
+CAGE_CODE → DESCRIPTION_1 → ... → PTC_WM_NAME → CAGE_CODE (duplicate = end of group)
 ```
 
-Each group of 5 consecutive `<Parameter>` elements belongs to one CAD object. The `PTC_WM_NAME` value identifies which object owns the preceding 4 parameters.
+Each group of N consecutive `<Parameter>` elements belongs to one CAD object. The `PTC_WM_NAME` value identifies which object owns the preceding parameters.
 
 **This order must be preserved exactly when writing back to XML** — there is no other mechanism to associate parameters with their CAD objects.
 
@@ -47,9 +47,14 @@ Example parameter structure:
 
 ## Spreadsheet Column Order
 
-When displayed in the workbook, parameters are reordered to:
+Columns are ordered dynamically with a priority system:
+
+1. **Priority fields** (in this order, if present): `PTC_WM_NAME`, `CAGE_CODE`, `PART_NUMBER`, `DESCRIPTION_1`, `DESCRIPTION_2`
+2. **Additional fields**: Sorted alphabetically after priority fields
+
+Example: XML with fields `A`, `CAGE_CODE`, `E`, `DESCRIPTION_1`, `PTC_WM_NAME` becomes:
 ```
-PTC_WM_NAME | CAGE_CODE | PART_NUMBER | DESCRIPTION_1 | DESCRIPTION_2
+PTC_WM_NAME | CAGE_CODE | DESCRIPTION_1 | A | E
 ```
 
 - Column A (PTC_WM_NAME): Read-only/locked — identifies the CAD object
@@ -70,7 +75,7 @@ The `param_manager.xlsm` workbook uses:
 
 When exporting from spreadsheet back to XML:
 - **Required fields:** CAGE_CODE, DESCRIPTION_1, PART_NUMBER, PTC_WM_NAME (warn if blank)
-- **Optional field:** DESCRIPTION_2 (allowed blank)
+- **Optional fields:** DESCRIPTION_2 and any dynamically-detected fields (blanks allowed)
 - **Blank handling:** Use `<Value></Value>` format
 - **Row count:** Must match original XML parameter count
 - **PTC_WM_NAME:** Must match original values (verify despite column lock)
@@ -78,5 +83,6 @@ When exporting from spreadsheet back to XML:
 ## VBA Development Notes
 
 - XML processing via MSXML2.DOMDocument
-- ListBox controls: Evaluate Form vs ActiveX based on file system access needs
-- File listing may require manual refresh button for detecting new external files
+- ListBox controls: Use ActiveX for programmatic population and selection access
+- **Refresh strategy:** Combined approach — `Workbook_Activate` event auto-refreshes XML file list, plus manual Refresh button for on-demand updates
+- **Dynamic field detection:** Iterate XML parameter names until first duplicate to determine group size
