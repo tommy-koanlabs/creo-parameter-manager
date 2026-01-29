@@ -10,6 +10,11 @@
         <Value></Value>
         <Description>*Name/Description Line 1</Description>
     </Parameter>
+    <Parameter Name="DESCRIPTION_2">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>Name/Description Line 2</Description>
+    </Parameter>
     <Parameter Name="PART_NUMBER">
         <DataType>String</DataType>
         <Value></Value>
@@ -29,6 +34,11 @@
         <DataType>String</DataType>
         <Value></Value>
         <Description>*Name/Description Line 1</Description>
+    </Parameter>
+    <Parameter Name="DESCRIPTION_2">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>Name/Description Line 2</Description>
     </Parameter>
     <Parameter Name="PART_NUMBER">
         <DataType>String</DataType>
@@ -50,6 +60,11 @@
         <Value>JIC x JIC x FNPT Female Branch Tee 3/4"</Value>
         <Description>*Name/Description Line 1</Description>
     </Parameter>
+    <Parameter Name="DESCRIPTION_2">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>Name/Description Line 2</Description>
+    </Parameter>
     <Parameter Name="PART_NUMBER">
         <DataType>String</DataType>
         <Value>J12TTF</Value>
@@ -70,6 +85,11 @@
         <Value></Value>
         <Description>*Name/Description Line 1</Description>
     </Parameter>
+    <Parameter Name="DESCRIPTION_2">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>Name/Description Line 2</Description>
+    </Parameter>
     <Parameter Name="PART_NUMBER">
         <DataType>String</DataType>
         <Value></Value>
@@ -89,6 +109,11 @@
         <DataType>String</DataType>
         <Value></Value>
         <Description>*Name/Description Line 1</Description>
+    </Parameter>
+    <Parameter Name="DESCRIPTION_2">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>Name/Description Line 2</Description>
     </Parameter>
     <Parameter Name="PART_NUMBER">
         <DataType>String</DataType>
