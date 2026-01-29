@@ -1,0 +1,80 @@
+================================================================================
+VBA Module Installation Guide - Creo Parameter Manager
+================================================================================
+
+PREREQUISITES
+-------------
+- Microsoft Excel with macro support enabled
+- param_manager.xlsm open in Excel
+
+INSTALLATION STEPS
+------------------
+
+1. Open param_manager.xlsm in Excel
+
+2. Press Alt+F11 to open the VBA Editor
+
+3. Import the main module:
+   - File > Import File...
+   - Select: modParamManager.bas
+   - This creates a new module "modParamManager" in Modules folder
+
+4. Update ThisWorkbook code:
+   - In Project Explorer, double-click "ThisWorkbook"
+   - Copy the contents of ThisWorkbook.cls (excluding the header attributes)
+   - Paste into the ThisWorkbook code window
+   - The key code to add:
+
+     Private Sub Workbook_Activate()
+         On Error Resume Next
+         RefreshXMLFileList
+         On Error GoTo 0
+     End Sub
+
+     Private Sub Workbook_Open()
+         On Error Resume Next
+         RefreshAllLists
+         On Error GoTo 0
+     End Sub
+
+5. Add a second ListBox for Sheets (if not present):
+   - Go to the Manager sheet (Sheet1)
+   - Developer tab > Insert > ActiveX Controls > List Box
+   - Draw the ListBox in the desired location
+   - Right-click > Properties
+   - Set Name to "ListBox2"
+
+6. Connect buttons to macros:
+   - Right-click Import button (down arrow) > Assign Macro
+   - Select: modParamManager.btnImport_Click
+   - Right-click Export button (up arrow) > Assign Macro
+   - Select: modParamManager.btnExport_Click
+   - (Optional) Add Refresh button and assign: modParamManager.btnRefresh_Click
+
+7. Save the workbook (Ctrl+S)
+
+8. Close and reopen to test Workbook_Open event
+
+
+VERIFICATION
+------------
+After installation:
+- ListBox1 should show XML files in the workbook's directory
+- ListBox2 should show "(No data sheets)" initially
+- Import should create a new sheet and populate ListBox2
+- Export should create an XML file and update ListBox1
+
+
+TROUBLESHOOTING
+---------------
+- "Object required" error: Check that ListBox1 and ListBox2 exist with exact names
+- Lists not populating: Ensure workbook is saved (needs a valid Path)
+- Macros disabled: Enable macros in Trust Center settings
+- ActiveX controls greyed out: Enable "Design Mode" then disable it
+
+
+FILE DESCRIPTIONS
+-----------------
+modParamManager.bas  - Main logic: import, export, list refresh
+ThisWorkbook.cls     - Workbook events: auto-refresh on open/activate
+Sheet1_Manager.cls   - Sheet events: button click handlers (optional)
