@@ -1,6 +1,45 @@
 # CLAUDE.md
-
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+This is a project to create scripts and tools for managing Creo Parametric model parameters in a user friendly manner. Creo is capable of importing and exporting lists of parameters in XML format. A custom sorting configuration has been created and exported (rp_config.xml) that filters the parameters table of an assembly, its subassemblies and parts to create a table containing only the parameters that need to be modified. This table was exported as example.xml and added to the repo. For convenience we will be refering to parts (.prt) and assemblies (.asm) as "CAD objects"
+
+The xml file contains parameter fields CAGE_CODE, DESCRIPTION_1, DESCRIPTION_2, PART_NUMBER, and PTC_WM_NAME. It is sorted using a multilevel sort, first by CAD object and then alphabetically by parameter name. There is no other indication of which CAD object the parameter belongs to besides the sorting method; it is critical that this order be retained when exporting back into xml format to prevent incorrect parameter assignment. PTC_WM_NAME contains the name of the object, and the three fields above it (CAGE_CODE, DESCRIPTION_1, PART_NUMBER) are the parameters belonging to it. I have prepopulated one of the objects in example.xml:
+
+```xml
+    <Parameter Name="CAGE_CODE">
+        <DataType>String</DataType>
+        <Value>0AEX9</Value>
+        <Description>*Design Activity CAGE Code</Description>
+    </Parameter>
+    <Parameter Name="DESCRIPTION_1">
+        <DataType>String</DataType>
+        <Value>JIC x JIC x FNPT Female Branch Tee 3/4"</Value>
+        <Description>*Name/Description Line 1</Description>
+    </Parameter>
+    <Parameter Name="DESCRIPTION_2">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>Name/Description Line 2</Description>
+    </Parameter>
+    <Parameter Name="PART_NUMBER">
+        <DataType>String</DataType>
+        <Value>J12TTF</Value>
+        <Description>*Part Number</Description>
+    </Parameter>
+    <Parameter Name="PTC_WM_NAME">
+        <DataType>String</DataType>
+        <Value>ssp-j12ttf_brnch_tee_12.prt</Value>
+        <Access>Locked</Access>
+```
+
+From this we gather that the part ssp-j12ttf_brnch_tee_12.prt has the following parameters:
+CAGE_CODE = 0AEX9
+DESCRIPTION_1 = JIC x JIC x FNPT Female Branch Tee 3/4 
+DESCRIPTION_2 = <null>
+PART_NUMBER = J12TTF
+PTC_WM_NAME = ssp-j12ttf_brnch_tee_12.prt
+
 
 ## AI Guidance
 
