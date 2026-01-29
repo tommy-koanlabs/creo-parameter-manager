@@ -69,10 +69,29 @@ Some possible edge cases that need to be considered, and the method to handle th
     The tool will also check that the number of values in the spreadsheet matches the number of parameters in the original xml file. This accounts for the user accidentally adding or removing rows and should spit a warning if a mismatch occurs
     The tool should lock the first row and column of the sheet to avoid this altogether
 
-## Mismatched PTC_WM_NAME
-    This should not occur due to the lock on the first column 
-    
-## AI Guidance
+### Mismatched PTC_WM_NAME
+    This should not occur due to the lock on the first column but check it and spit a warning anyways
+
+## Execution Strategy
+The first step will be to evaluate the feasibility of this plan and make adjustments as necessary. The information here takes priority over the above sections as this is specific implementation detail. If the information here conflicts with that in the deliverable section, use the information in the execution strategy section:
+
+I would like to have a macro enabled spreadsheet with an import and export button on the first sheet. The first sheet would have a short readme, an import button, an export button, and two list objects:
+1. Lists the xml files in the same directory as the spreadsheet, sorted by creation date newest-first if possible or just alphabetically otherwise.
+2. Lists the sheets of the workbook excluding the Manager (first) sheet, sorted newest-first (should match datetime stamps)
+
+The lists will both be single-selection list boxes, meaning only one file or sheet can be selected at a time. When the 'import' button is pressed, the sheet will grab the xml file selected in the list box, and convert it to a workbook sheet named using the filename and current datetime stamp with the format <xml_file_name>&&"-"&&<yyyymmdd_hhmmss>&&".xml" ( This isnt actual vba code just a representation of the plan. I am using && here to denote concatenation, <> for dynamically generated strings, and "" for static strings)
+
+The newly created sheet will show up in the sheet list box. 
+
+When the 'export' button is pressed, whichever sheet is selected is converted back into an xml file with error checking. The new xml file is named with the same name as the sheet it was created from. It will appear in the xml list box
+
+### Potential pitfalls
+1. We need to make sure that we can process the xml file in vba
+2. Do we need form objects or activex objects?
+3. Will we be able to list the files in the spreadsheets directory in a list object?
+4. Will the lists update automatically or will we need to add a refresh button? The sheets list can be updated on import of an xml file, but the xml file will need to update when exporting a sheet to xml (easy) or a new file is placed in the directory (hard, can happen any time; may need manual buttom)
+
+## AI Guidance Boilerplate Below (Not Project-Specific)
 
 * Ignore GEMINI.md and GEMINI-*.md files
 * To save main context space, for code searches, inspections, troubleshooting or analysis, use code-searcher subagent where appropriate - giving the subagent full context background for the task(s) you assign it.
