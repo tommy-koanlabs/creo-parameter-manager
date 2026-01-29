@@ -19,8 +19,6 @@ Private Const REQUIRED_FIELDS As String = "CAGE_CODE,DESCRIPTION_1,PART_NUMBER,P
 
 Private Function GetLocalPath(ByVal pathStr As String) As String
     ' Converts SharePoint/OneDrive URL to local sync folder path
-    ' Example: https://nasa-my.sharepoint.com/personal/user/Documents/Folder
-    '       -> C:\Users\user\OneDrive - NASA\Folder
 
     Dim localPath As String
     Dim docPos As Long
