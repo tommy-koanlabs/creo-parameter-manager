@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CreoParamSet>
+    <Parameter Name="CAGE_CODE">
+        <DataType>String</DataType>
+        <Value>22264</Value>
+        <Description>*Design Activity CAGE Code</Description>
+    </Parameter>
+    <Parameter Name="DESCRIPTION_1">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>*Name/Description Line 1</Description>
+    </Parameter>
+    <Parameter Name="PART_NUMBER">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>*Part Number</Description>
+    </Parameter>
+    <Parameter Name="PTC_WM_NAME">
+        <DataType>String</DataType>
+        <Value>_24_burst_disc_assm.asm</Value>
+        <Access>Locked</Access>
+    </Parameter>
+    <Parameter Name="CAGE_CODE">
+        <DataType>String</DataType>
+        <Value>22264</Value>
+        <Description>*Design Activity CAGE Code</Description>
+    </Parameter>
+    <Parameter Name="DESCRIPTION_1">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>*Name/Description Line 1</Description>
+    </Parameter>
+    <Parameter Name="PART_NUMBER">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>*Part Number</Description>
+    </Parameter>
+    <Parameter Name="PTC_WM_NAME">
+        <DataType>String</DataType>
+        <Value>jic-nut-12.prt</Value>
+        <Access>Locked</Access>
+    </Parameter>
+    <Parameter Name="CAGE_CODE">
+        <DataType>String</DataType>
+        <Value>22264</Value>
+        <Description>*Design Activity CAGE Code</Description>
+    </Parameter>
+    <Parameter Name="DESCRIPTION_1">
+        <DataType>String</DataType>
+        <Value>JIC x JIC x FNPT Female Branch Tee 3/4"</Value>
+        <Description>*Name/Description Line 1</Description>
+    </Parameter>
+    <Parameter Name="PART_NUMBER">
+        <DataType>String</DataType>
+        <Value>J12TTF</Value>
+        <Description>*Part Number</Description>
+    </Parameter>
+    <Parameter Name="PTC_WM_NAME">
+        <DataType>String</DataType>
+        <Value>ssp-j12ttf_brnch_tee_12.prt</Value>
+        <Access>Locked</Access>
+    </Parameter>
+    <Parameter Name="CAGE_CODE">
+        <DataType>String</DataType>
+        <Value>22264</Value>
+        <Description>*Design Activity CAGE Code</Description>
+    </Parameter>
+    <Parameter Name="DESCRIPTION_1">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>*Name/Description Line 1</Description>
+    </Parameter>
+    <Parameter Name="PART_NUMBER">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>*Part Number</Description>
+    </Parameter>
+    <Parameter Name="PTC_WM_NAME">
+        <DataType>String</DataType>
+        <Value>4443k734_bushing_08x12.prt</Value>
+        <Access>Locked</Access>
+    </Parameter>
+    <Parameter Name="CAGE_CODE">
+        <DataType>String</DataType>
+        <Value>22264</Value>
+        <Description>*Design Activity CAGE Code</Description>
+    </Parameter>
+    <Parameter Name="DESCRIPTION_1">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>*Name/Description Line 1</Description>
+    </Parameter>
+    <Parameter Name="PART_NUMBER">
+        <DataType>String</DataType>
+        <Value></Value>
+        <Description>*Part Number</Description>
+    </Parameter>
+    <Parameter Name="PTC_WM_NAME">
+        <DataType>String</DataType>
+        <Value>4412t237_burst_disc_npt_08.prt</Value>
+        <Access>Locked</Access>
+    </Parameter>
+</CreoParamSet>
