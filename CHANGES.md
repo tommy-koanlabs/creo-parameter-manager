@@ -23,10 +23,11 @@
 - Light yellow (RGB 255, 255, 204): User-added data (auto-applied)
 
 **Import Formatting**:
-- First column: Bold text, dark grey fill (RGB 200, 200, 200)
-- First row: Bold headers, dark grey fill (RGB 200, 200, 200)
-- All sheet cells: White fill
-- All data cells: Bordered
+- First column: Bold text, dark grey fill (RGB 200, 200, 200), thick black right border
+- First row: Bold headers, dark grey fill (RGB 200, 200, 200), thick black bottom border, all thin borders on header cells
+- All sheet cells: White fill, middle center aligned
+- All data cells: Bordered (thin black)
+- Text alignment: PTC_WM_NAME, DESCRIPTION_1, DESCRIPTION_2 data cells are left-aligned with single indent (headers stay centered)
 - Marker row (row 2): Hidden, contains "F" (full) or "P" (partial) markers
 
 **Implementation**:
@@ -40,9 +41,12 @@
 - Adjusted all pastel colors to matching saturation levels (51 units from white RGB 255,255,255)
 - Removed dark red/bold formatting for missing standard fields (simplified to light grey)
 - PTC_WM_NAME column now has dark grey fill and no conditional formatting
-- First row (headers) now has dark grey fill
+- First row (headers) now has dark grey fill with thick black bottom border
+- First column now has thick black right border for clear visual separation
+- All borders on column header cells for clean table appearance
 - White fill applied to entire sheet, not just data cells
 - Standard field detection no longer includes locked fields check
+- Text alignment: All cells middle center by default; PTC_WM_NAME, DESCRIPTION_1, DESCRIPTION_2 data cells left-aligned with single indent
 
 **Technical Details**:
 - Data rows now start at row 3 (row 1 = headers, row 2 = markers)

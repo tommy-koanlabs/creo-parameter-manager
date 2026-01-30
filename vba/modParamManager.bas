@@ -580,17 +580,35 @@ Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, locked
 
     ' === DIRECT FORMATTING (applied first, can be overridden by conditional) ===
 
-    ' Default white fill for ALL sheet cells (not just data)
+    ' Default white fill for ALL sheet cells
     ws.Cells.Interior.Color = RGB(255, 255, 255)
 
-    ' First row: Bold + dark grey fill
+    ' First row: Bold + dark grey fill + thick bottom border
     ws.Rows(1).Font.Bold = True
     ws.Rows(1).Interior.Color = RGB(200, 200, 200)
+    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(1, colCount))
+    With rng.Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .Color = RGB(0, 0, 0)
+        .Weight = xlThick
+    End With
 
-    ' First column: Bold text, dark grey fill
+    ' Add all borders to column header cells
+    With rng.Borders
+        .LineStyle = xlContinuous
+        .Weight = xlThin
+        .Color = RGB(0, 0, 0)
+    End With
+
+    ' First column: Bold text, dark grey fill (entire column) + thick right border
     ws.Columns(1).Font.Bold = True
-    Set rng = ws.Range(ws.Cells(dataStartRow, 1), ws.Cells(rowCount, 1))
-    rng.Interior.Color = RGB(200, 200, 200)
+    ws.Columns(1).Interior.Color = RGB(200, 200, 200)
+    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(rowCount, 1))
+    With rng.Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .Color = RGB(0, 0, 0)
+        .Weight = xlThick
+    End With
 
     ' Borders: Left and right on columns, all borders on data cells
     For col = 1 To colCount
@@ -609,6 +627,23 @@ Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, locked
             .LineStyle = xlContinuous
             .Weight = xlThin
         End With
+    Next col
+
+    ' === TEXT ALIGNMENT ===
+
+    ' All sheet cells: middle center aligned
+    ws.Cells.VerticalAlignment = xlCenter
+    ws.Cells.HorizontalAlignment = xlCenter
+
+    ' Specific columns: left aligned with indent (data rows only, headers stay center)
+    For col = 1 To colCount
+        fieldName = CStr(orderedFields(col))
+
+        If fieldName = "PTC_WM_NAME" Or fieldName = "DESCRIPTION_1" Or fieldName = "DESCRIPTION_2" Then
+            Set rng = ws.Range(ws.Cells(dataStartRow, col), ws.Cells(rowCount, col))
+            rng.HorizontalAlignment = xlLeft
+            rng.IndentLevel = 1
+        End If
     Next col
 
     ' === CONDITIONAL FORMATTING ===

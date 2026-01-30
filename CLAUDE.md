@@ -64,10 +64,11 @@ PTC_WM_NAME | CAGE_CODE | DESCRIPTION_1 | A | E
 ## Cell and Column Formatting
 
 ### Visual Structure
-- **First column**: Bold text with grey fill (#C8C8C8) - identifies CAD objects
-- **First row**: Bold text - column headers
+- **First column**: Bold text, dark grey fill (RGB 200, 200, 200), thick black right border - identifies CAD objects
+- **First row**: Bold text, dark grey fill (RGB 200, 200, 200), thick black bottom border, all thin borders on header cells
 - **Marker row** (row 2): Hidden row containing "F" (full field) or "P" (partial field) markers
 - **Data rows**: Start at row 3, all cells have borders and white default fill
+- **Text alignment**: All cells middle center aligned; PTC_WM_NAME, DESCRIPTION_1, DESCRIPTION_2 data cells are left-aligned with single indent (headers remain centered)
 - **All cells**: Formatted as text to prevent Excel from misinterpreting values
 
 ### Color-Coded Field Status
