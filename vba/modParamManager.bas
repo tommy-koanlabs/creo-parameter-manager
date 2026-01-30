@@ -14,6 +14,103 @@ Private Const PRIORITY_FIELDS As String = "PTC_WM_NAME,CAGE_CODE,PART_NUMBER,DES
 Private Const REQUIRED_FIELDS As String = "CAGE_CODE,DESCRIPTION_1,PART_NUMBER,PTC_WM_NAME"
 
 ' =============================================================================
+' UTILITIES
+' =============================================================================
+
+Private Function CreateXMLDocument() As Object
+    ' Creates an MSXML DOM document, trying multiple versions for compatibility
+    Dim xmlDoc As Object
+
+    On Error Resume Next
+
+    ' Try MSXML 6.0 first (preferred)
+    Set xmlDoc = CreateObject("MSXML2.DOMDocument60")
+    If xmlDoc Is Nothing Then
+        ' Try MSXML 3.0
+        Set xmlDoc = CreateObject("MSXML2.DOMDocument30")
+    End If
+    If xmlDoc Is Nothing Then
+        ' Try generic version
+        Set xmlDoc = CreateObject("MSXML2.DOMDocument")
+    End If
+    If xmlDoc Is Nothing Then
+        ' Try Microsoft.XMLDOM as last resort
+        Set xmlDoc = CreateObject("Microsoft.XMLDOM")
+    End If
+
+    On Error GoTo 0
+
+    If Not xmlDoc Is Nothing Then
+        xmlDoc.Async = False
+        xmlDoc.validateOnParse = False
+    End If
+
+    Set CreateXMLDocument = xmlDoc
+End Function
+
+Private Function GetLocalPath(ByVal pathStr As String) As String
+    ' Converts SharePoint/OneDrive URL to local sync folder path
+
+    Dim localPath As String
+    Dim docPos As Long
+    Dim relativePath As String
+    Dim oneDrivePath As String
+    Dim fso As Object
+    Dim userFolder As Object
+    Dim subFolder As Object
+
+    ' If not a URL, return as-is
+    If Left(pathStr, 8) <> "https://" And Left(pathStr, 7) <> "http://" Then
+        GetLocalPath = pathStr
+        Exit Function
+    End If
+
+    ' Extract path after /Documents/
+    docPos = InStr(1, pathStr, "/Documents/", vbTextCompare)
+    If docPos > 0 Then
+        relativePath = Mid(pathStr, docPos + Len("/Documents/"))
+        ' Replace forward slashes with backslashes
+        relativePath = Replace(relativePath, "/", "\")
+    Else
+        ' No /Documents/ found - can't convert
+        GetLocalPath = pathStr
+        Exit Function
+    End If
+
+    ' Try OneDrive environment variables (Business first, then Personal)
+    oneDrivePath = Environ("OneDriveCommercial")
+    If oneDrivePath = "" Then oneDrivePath = Environ("OneDriveConsumer")
+    If oneDrivePath = "" Then oneDrivePath = Environ("OneDrive")
+
+    ' If env var found, construct path
+    If oneDrivePath <> "" Then
+        localPath = oneDrivePath & "\" & relativePath
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        If fso.FolderExists(localPath) Then
+            GetLocalPath = localPath
+            Exit Function
+        End If
+    End If
+
+    ' Fallback: scan user profile for OneDrive folders
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set userFolder = fso.GetFolder(Environ("USERPROFILE"))
+
+    For Each subFolder In userFolder.SubFolders
+        If Left(subFolder.Name, 8) = "OneDrive" Then
+            localPath = subFolder.Path & "\" & relativePath
+            If fso.FolderExists(localPath) Then
+                GetLocalPath = localPath
+                Exit Function
+            End If
+        End If
+    Next subFolder
+
+    ' Could not resolve - return original
+    GetLocalPath = pathStr
+End Function
+
+' =============================================================================
 ' LIST REFRESH PROCEDURES
 ' =============================================================================
 
@@ -46,6 +143,9 @@ Public Sub RefreshXMLFileList()
         lb.AddItem "(Save workbook first to see XML files)"
         Exit Sub
     End If
+
+    ' Convert SharePoint/OneDrive URL to local path
+    workbookPath = GetLocalPath(workbookPath)
 
     Set folder = fso.GetFolder(workbookPath)
 
@@ -196,12 +296,14 @@ Public Sub ImportXML()
         Exit Sub
     End If
 
-    xmlPath = ThisWorkbook.Path & "\" & selectedFile
+    xmlPath = GetLocalPath(ThisWorkbook.Path) & "\" & selectedFile
 
     ' Load XML
-    Set xmlDoc = CreateObject("MSXML2.DOMDocument60")
-    xmlDoc.Async = False
-    xmlDoc.validateOnParse = False
+    Set xmlDoc = CreateXMLDocument()
+    If xmlDoc Is Nothing Then
+        MsgBox "Could not create XML parser. MSXML may not be installed.", vbCritical
+        Exit Sub
+    End If
 
     If Not xmlDoc.Load(xmlPath) Then
         MsgBox "Failed to load XML file: " & xmlDoc.parseError.reason, vbCritical
@@ -520,8 +622,11 @@ Public Sub ExportXML()
     End If
 
     ' Create XML document
-    Set xmlDoc = CreateObject("MSXML2.DOMDocument60")
-    xmlDoc.Async = False
+    Set xmlDoc = CreateXMLDocument()
+    If xmlDoc Is Nothing Then
+        MsgBox "Could not create XML parser. MSXML may not be installed.", vbCritical
+        Exit Sub
+    End If
 
     ' Add XML declaration
     Dim xmlDecl As Object
@@ -567,7 +672,7 @@ Public Sub ExportXML()
     Next row
 
     ' Save XML file (same name as sheet)
-    outputXmlPath = ThisWorkbook.Path & "\" & selectedSheet
+    outputXmlPath = GetLocalPath(ThisWorkbook.Path) & "\" & selectedSheet
     If LCase(Right(outputXmlPath, 4)) <> ".xml" Then
         outputXmlPath = outputXmlPath & ".xml"
     End If
