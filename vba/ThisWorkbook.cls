@@ -67,7 +67,7 @@ Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal Target As Range)
                 hasValue = (Trim(CStr(cell.Value)) <> "")
 
                 ' If cell now has value and wasn't blue (original data), make it yellow
-                If hasValue And cell.Interior.Color <> RGB(173, 216, 230) Then
+                If hasValue And cell.Interior.Color <> RGB(204, 204, 255) Then
                     ' User added data to an empty cell
                     cell.Interior.Color = RGB(255, 255, 204) ' Light yellow
                 ElseIf Not hasValue Then

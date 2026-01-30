@@ -2,29 +2,31 @@
 
 ## New Features
 
-### Enhanced Conditional Formatting System
+### Enhanced Conditional Formatting System (Refined)
 **Feature**: Comprehensive color-coded formatting system for standard and additional parameters with automatic detection of user-added data.
 
-**Color Scheme**:
+**Color Scheme** (all pastel colors have matching saturation):
 
 *Standard fields (PTC_WM_NAME, CAGE_CODE, PART_NUMBER, DESCRIPTION_1, DESCRIPTION_2):*
-- Light green (RGB 144, 238, 144): Filled
-- Light red (RGB 255, 204, 203): Blank
-- Dark red + bold (RGB 255, 0, 0): Missing from object (error, shouldn't occur)
+- Pastel green (RGB 204, 255, 204): Filled
+- Pastel red (RGB 255, 204, 204): Blank
+- Light grey (RGB 240, 240, 240): Missing from object
+- Note: PTC_WM_NAME has dark grey fill, no conditional formatting (always present)
 
 *Additional fields - full presence:*
-- Light green: Filled
-- Light red: Blank
+- Pastel green (RGB 204, 255, 204): Filled
+- Pastel red (RGB 255, 204, 204): Blank
 
 *Additional fields - partial presence:*
-- Light blue (RGB 173, 216, 230): Original data from XML
+- Pastel blue (RGB 204, 204, 255): Original data from XML
 - Light grey (RGB 240, 240, 240): Missing (empty cell)
 - Light yellow (RGB 255, 255, 204): User-added data (auto-applied)
 
 **Import Formatting**:
-- First column: Bold text, grey fill (#C8C8C8)
-- First row: Bold headers
-- All data cells: White fill, bordered
+- First column: Bold text, dark grey fill (RGB 200, 200, 200)
+- First row: Bold headers, dark grey fill (RGB 200, 200, 200)
+- All sheet cells: White fill
+- All data cells: Bordered
 - Marker row (row 2): Hidden, contains "F" (full) or "P" (partial) markers
 
 **Implementation**:
@@ -33,6 +35,14 @@
 - Added `Workbook_SheetChange` event handler in `ThisWorkbook.cls` to detect user additions
 - When user fills empty cell in partial field, automatically changes from grey to yellow
 - Added `InStrInArray()` helper function to check if field is standard
+
+**Refinements**:
+- Adjusted all pastel colors to matching saturation levels (51 units from white RGB 255,255,255)
+- Removed dark red/bold formatting for missing standard fields (simplified to light grey)
+- PTC_WM_NAME column now has dark grey fill and no conditional formatting
+- First row (headers) now has dark grey fill
+- White fill applied to entire sheet, not just data cells
+- Standard field detection no longer includes locked fields check
 
 **Technical Details**:
 - Data rows now start at row 3 (row 1 = headers, row 2 = markers)

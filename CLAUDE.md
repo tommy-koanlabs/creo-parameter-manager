@@ -73,18 +73,21 @@ PTC_WM_NAME | CAGE_CODE | DESCRIPTION_1 | A | E
 ### Color-Coded Field Status
 
 **Standard fields** (PTC_WM_NAME, CAGE_CODE, PART_NUMBER, DESCRIPTION_1, DESCRIPTION_2):
-- **Light green** (RGB 144, 238, 144): Filled - good status
-- **Light red** (RGB 255, 204, 203): Blank - needs attention
-- **Dark red + bold** (RGB 255, 0, 0): Missing from object when present in others (error condition, should not occur)
+- **Pastel green** (RGB 204, 255, 204): Filled - good status
+- **Pastel red** (RGB 255, 204, 204): Blank - needs attention
+- **Light grey** (RGB 240, 240, 240): Missing from object when present in others
+- **Note**: PTC_WM_NAME column has dark grey fill and no conditional formatting (always present)
 
 **Additional fields with full presence** (all objects have this parameter):
-- **Light green**: Filled
-- **Light red**: Blank
+- **Pastel green** (RGB 204, 255, 204): Filled
+- **Pastel red** (RGB 255, 204, 204): Blank
 
 **Additional fields with partial presence** (some objects have this parameter, some don't):
-- **Light blue** (RGB 173, 216, 230): Original data from XML
+- **Pastel blue** (RGB 204, 204, 255): Original data from XML
 - **Light grey** (RGB 240, 240, 240): Parameter missing (empty cell)
 - **Light yellow** (RGB 255, 255, 204): User-added data (automatically applied when user fills empty cell)
+
+**Color saturation**: All pastel colors (green, red, blue, yellow) have matching saturation levels for visual consistency
 
 ### Locked Columns
 - Any field with `<Access>Locked</Access>` in the XML is locked (read-only)

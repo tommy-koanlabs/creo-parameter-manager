@@ -580,17 +580,17 @@ Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, locked
 
     ' === DIRECT FORMATTING (applied first, can be overridden by conditional) ===
 
-    ' Default white fill for all data cells
-    Set rng = ws.Range(ws.Cells(dataStartRow, 1), ws.Cells(rowCount, colCount))
-    rng.Interior.Color = RGB(255, 255, 255)
+    ' Default white fill for ALL sheet cells (not just data)
+    ws.Cells.Interior.Color = RGB(255, 255, 255)
 
-    ' First column: Bold text, grey fill
+    ' First row: Bold + dark grey fill
+    ws.Rows(1).Font.Bold = True
+    ws.Rows(1).Interior.Color = RGB(200, 200, 200)
+
+    ' First column: Bold text, dark grey fill
     ws.Columns(1).Font.Bold = True
     Set rng = ws.Range(ws.Cells(dataStartRow, 1), ws.Cells(rowCount, 1))
     rng.Interior.Color = RGB(200, 200, 200)
-
-    ' First row: Bold (already done in import)
-    ws.Rows(1).Font.Bold = True
 
     ' Borders: Left and right on columns, all borders on data cells
     For col = 1 To colCount
@@ -617,8 +617,7 @@ Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, locked
         fieldName = CStr(orderedFields(col))
 
         ' Check if this is a standard (priority) field
-        isStandardField = CollectionContains(lockedFields, fieldName) Or _
-                          InStrInArray(fieldName, priorityArr) >= 0
+        isStandardField = InStrInArray(fieldName, priorityArr) >= 0
 
         ' Check if this is a partial field (from marker row)
         isPartialField = (ws.Cells(2, col).Value = "P")
@@ -627,47 +626,52 @@ Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, locked
         Set cellRng = ws.Range(ws.Cells(dataStartRow, col), ws.Cells(rowCount, col))
         cellRng.FormatConditions.Delete ' Clear existing conditions
 
+        ' Special handling for first column (PTC_WM_NAME) - no conditional formatting needed
+        If col = 1 Then
+            ' Already has dark grey direct formatting, skip conditional formatting
+            GoTo NextColumn
+        End If
+
         If isStandardField And Not isPartialField Then
             ' === STANDARD FIELD (full presence) ===
             ' Green for filled, red for blank
 
-            ' Rule 1: Non-empty = light green
+            ' Rule 1: Non-empty = pastel green
             Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
                 Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))>0")
-            fc.Interior.Color = RGB(144, 238, 144) ' Light green
+            fc.Interior.Color = RGB(204, 255, 204) ' Pastel green (matches yellow saturation)
             fc.StopIfTrue = False
 
-            ' Rule 2: Empty = light red
+            ' Rule 2: Empty = pastel red
             Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
                 Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
-            fc.Interior.Color = RGB(255, 204, 203) ' Light red
+            fc.Interior.Color = RGB(255, 204, 204) ' Pastel red (matches yellow saturation)
             fc.StopIfTrue = False
 
         ElseIf isStandardField And isPartialField Then
-            ' === STANDARD FIELD with partial presence (shouldn't happen but handle it) ===
-            ' Non-empty = green, empty = dark red with bold
+            ' === STANDARD FIELD with partial presence (missing in some objects) ===
+            ' Green for filled, light grey for missing
 
-            ' Rule 1: Non-empty = light green
+            ' Rule 1: Non-empty = pastel green
             Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
                 Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))>0")
-            fc.Interior.Color = RGB(144, 238, 144) ' Light green
+            fc.Interior.Color = RGB(204, 255, 204) ' Pastel green
             fc.StopIfTrue = False
 
-            ' Rule 2: Empty = dark red, bold
+            ' Rule 2: Empty = light grey (missing parameter)
             Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
                 Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
-            fc.Interior.Color = RGB(255, 0, 0) ' Dark red
-            fc.Font.Bold = True
+            fc.Interior.Color = RGB(240, 240, 240) ' Light grey
             fc.StopIfTrue = False
 
         ElseIf Not isStandardField And isPartialField Then
             ' === ADDITIONAL FIELD with partial presence ===
             ' Filled originally = light blue, empty = light grey, user-added = light yellow
 
-            ' For partial additional fields, use direct light blue for cells with original data
+            ' For partial additional fields, use direct pastel blue for cells with original data
             For row = dataStartRow To rowCount
                 If Trim(CStr(ws.Cells(row, col).Value)) <> "" Then
-                    ws.Cells(row, col).Interior.Color = RGB(173, 216, 230) ' Light blue
+                    ws.Cells(row, col).Interior.Color = RGB(204, 204, 255) ' Pastel blue (matches yellow saturation)
                 End If
             Next row
 
@@ -677,27 +681,23 @@ Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, locked
             fc.Interior.Color = RGB(240, 240, 240) ' Light grey
             fc.StopIfTrue = False
 
-            ' Rule 2: Non-empty = light yellow (will show for user-added, overridden by direct blue for original)
-            ' Actually, we can't distinguish user-added from original with conditional formatting alone
-            ' The light blue direct format will remain for original data
-            ' When user types in an empty (grey) cell, they should manually change color or we need event handler
-
         Else
             ' === ADDITIONAL FIELD (full presence) ===
             ' Same as standard fields
-            ' Rule 1: Non-empty = light green
+            ' Rule 1: Non-empty = pastel green
             Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
                 Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))>0")
-            fc.Interior.Color = RGB(144, 238, 144) ' Light green
+            fc.Interior.Color = RGB(204, 255, 204) ' Pastel green
             fc.StopIfTrue = False
 
-            ' Rule 2: Empty = light red
+            ' Rule 2: Empty = pastel red
             Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
                 Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
-            fc.Interior.Color = RGB(255, 204, 203) ' Light red
+            fc.Interior.Color = RGB(255, 204, 204) ' Pastel red
             fc.StopIfTrue = False
         End If
 
+NextColumn:
         ' Lock columns with locked fields
         If CollectionContains(lockedFields, fieldName) Then
             ws.Columns(col).Locked = True
