@@ -122,10 +122,11 @@ Public Sub RefreshXMLFileList()
     Dim fso As Object
     Dim folder As Object
     Dim file As Object
-    Dim xmlFiles As Collection
-    Dim fileDates As Collection
     Dim workbookPath As String
     Dim i As Long, j As Long
+    Dim fileCount As Long
+    Dim fileNames() As String
+    Dim fileDates() As Date
     Dim tempName As String
     Dim tempDate As Date
 
@@ -134,8 +135,6 @@ Public Sub RefreshXMLFileList()
     Set ws = ThisWorkbook.Sheets(1)
     Set lb = ws.OLEObjects("ListBox1").Object
     Set fso = CreateObject("Scripting.FileSystemObject")
-    Set xmlFiles = New Collection
-    Set fileDates = New Collection
 
     workbookPath = ThisWorkbook.Path
     If workbookPath = "" Then
@@ -149,48 +148,53 @@ Public Sub RefreshXMLFileList()
 
     Set folder = fso.GetFolder(workbookPath)
 
-    ' Collect all XML files
+    ' Count XML files first
+    fileCount = 0
     For Each file In folder.Files
         If LCase(fso.GetExtensionName(file.Name)) = "xml" Then
-            xmlFiles.Add file.Name
-            fileDates.Add file.DateLastModified
+            fileCount = fileCount + 1
         End If
     Next file
 
-    ' Sort by date descending (bubble sort - fine for small lists)
-    For i = 1 To xmlFiles.Count - 1
-        For j = i + 1 To xmlFiles.Count
+    ' Handle case with no files
+    lb.Clear
+    If fileCount = 0 Then
+        lb.AddItem "(No XML files found)"
+        Exit Sub
+    End If
+
+    ' Collect all XML files into arrays
+    ReDim fileNames(1 To fileCount)
+    ReDim fileDates(1 To fileCount)
+    i = 1
+    For Each file In folder.Files
+        If LCase(fso.GetExtensionName(file.Name)) = "xml" Then
+            fileNames(i) = file.Name
+            fileDates(i) = file.DateLastModified
+            i = i + 1
+        End If
+    Next file
+
+    ' Sort by date descending (bubble sort)
+    For i = 1 To fileCount - 1
+        For j = i + 1 To fileCount
             If fileDates(j) > fileDates(i) Then
-                ' Swap
-                tempName = xmlFiles(i)
+                ' Swap names
+                tempName = fileNames(i)
+                fileNames(i) = fileNames(j)
+                fileNames(j) = tempName
+                ' Swap dates
                 tempDate = fileDates(i)
-                xmlFiles.Remove i
-                xmlFiles.Add tempName, , , i - 1
-                fileDates.Remove i
-                fileDates.Add tempDate, , , i - 1
-
-                xmlFiles.Remove i
-                xmlFiles.Add xmlFiles(j - 1), , i
-                fileDates.Remove i
-                fileDates.Add fileDates(j - 1), , i
-
-                xmlFiles.Remove j
-                xmlFiles.Add tempName, , j
-                fileDates.Remove j
-                fileDates.Add tempDate, , j
+                fileDates(i) = fileDates(j)
+                fileDates(j) = tempDate
             End If
         Next j
     Next i
 
     ' Populate listbox
-    lb.Clear
-    For i = 1 To xmlFiles.Count
-        lb.AddItem xmlFiles(i)
+    For i = 1 To fileCount
+        lb.AddItem fileNames(i)
     Next i
-
-    If xmlFiles.Count = 0 Then
-        lb.AddItem "(No XML files found)"
-    End If
 
     Exit Sub
 
@@ -203,48 +207,57 @@ Public Sub RefreshSheetList()
 
     Dim ws As Worksheet
     Dim lb As MSForms.ListBox
-    Dim dataSheets As Collection
     Dim sheet As Worksheet
     Dim i As Long, j As Long
+    Dim sheetCount As Long
+    Dim sheetNames() As String
     Dim tempName As String
 
     On Error GoTo ErrorHandler
 
     Set ws = ThisWorkbook.Sheets(1)
     Set lb = ws.OLEObjects("ListBox2").Object
-    Set dataSheets = New Collection
 
-    ' Collect data sheets (all except first sheet)
+    ' Count data sheets (all except first sheet)
+    sheetCount = 0
     For Each sheet In ThisWorkbook.Sheets
         If sheet.Index > 1 Then
-            dataSheets.Add sheet.Name
+            sheetCount = sheetCount + 1
+        End If
+    Next sheet
+
+    ' Handle case with no data sheets
+    lb.Clear
+    If sheetCount = 0 Then
+        lb.AddItem "(No data sheets)"
+        Exit Sub
+    End If
+
+    ' Collect data sheets into array
+    ReDim sheetNames(1 To sheetCount)
+    i = 1
+    For Each sheet In ThisWorkbook.Sheets
+        If sheet.Index > 1 Then
+            sheetNames(i) = sheet.Name
+            i = i + 1
         End If
     Next sheet
 
     ' Sort alphabetically descending (timestamps in name = newest first)
-    For i = 1 To dataSheets.Count - 1
-        For j = i + 1 To dataSheets.Count
-            If dataSheets(j) > dataSheets(i) Then
-                tempName = dataSheets(i)
-                dataSheets.Remove i
-                dataSheets.Add tempName, , , i - 1
-                dataSheets.Remove i
-                dataSheets.Add dataSheets(j - 1), , i
-                dataSheets.Remove j
-                dataSheets.Add tempName, , j
+    For i = 1 To sheetCount - 1
+        For j = i + 1 To sheetCount
+            If sheetNames(j) > sheetNames(i) Then
+                tempName = sheetNames(i)
+                sheetNames(i) = sheetNames(j)
+                sheetNames(j) = tempName
             End If
         Next j
     Next i
 
     ' Populate listbox
-    lb.Clear
-    For i = 1 To dataSheets.Count
-        lb.AddItem dataSheets(i)
+    For i = 1 To sheetCount
+        lb.AddItem sheetNames(i)
     Next i
-
-    If dataSheets.Count = 0 Then
-        lb.AddItem "(No data sheets)"
-    End If
 
     Exit Sub
 
@@ -275,6 +288,7 @@ Public Sub ImportXML()
     Dim paramNodes As Object
     Dim fieldNames As Collection
     Dim orderedFields As Collection
+    Dim lockedFields As Collection
     Dim paramData As Collection
     Dim cadObjectData As Object
     Dim i As Long, row As Long, col As Long
@@ -324,6 +338,9 @@ Public Sub ImportXML()
         Exit Sub
     End If
 
+    ' Detect locked fields
+    Set lockedFields = DetectLockedFields(paramNodes)
+
     ' Order fields by priority
     Set orderedFields = OrderFieldsByPriority(fieldNames)
 
@@ -341,8 +358,8 @@ Public Sub ImportXML()
         newSheet.Cells(1, col).Font.Bold = True
     Next col
 
-    ' Write data rows
-    row = 2
+    ' Write data rows (starting at row 3, row 2 will be marker row)
+    row = 3
     For i = 1 To paramData.Count
         Set cadObjectData = paramData(i)
         For col = 1 To orderedFields.Count
@@ -353,8 +370,30 @@ Public Sub ImportXML()
         row = row + 1
     Next i
 
+    ' Add marker row (row 2) to track which fields are partial
+    ' "F" = Full field (all objects have it), "P" = Partial field (some have it)
+    Dim hasEmpty As Boolean, hasFilled As Boolean
+    For col = 1 To orderedFields.Count
+        hasEmpty = False
+        hasFilled = False
+        For row = 3 To paramData.Count + 2
+            If Trim(CStr(newSheet.Cells(row, col).Value)) = "" Then
+                hasEmpty = True
+            Else
+                hasFilled = True
+            End If
+        Next row
+
+        ' Mark column type
+        If hasEmpty And hasFilled Then
+            newSheet.Cells(2, col).Value = "P" ' Partial field
+        Else
+            newSheet.Cells(2, col).Value = "F" ' Full field
+        End If
+    Next col
+
     ' Format sheet
-    FormatDataSheet newSheet, orderedFields.Count, paramData.Count + 1
+    FormatDataSheet newSheet, orderedFields, lockedFields, paramData.Count + 2 ' +2 for header and marker row
 
     ' Refresh sheet list
     RefreshSheetList
@@ -392,6 +431,36 @@ Private Function DetectFieldNames(paramNodes As Object) As Collection
     Set DetectFieldNames = fieldNames
 End Function
 
+Private Function DetectLockedFields(paramNodes As Object) As Collection
+    ' Detect which fields have Access=Locked anywhere in the XML
+
+    Dim lockedFields As Collection
+    Dim node As Object
+    Dim paramName As String
+    Dim accessNode As Object
+    Dim i As Long
+
+    Set lockedFields = New Collection
+
+    For i = 0 To paramNodes.Length - 1
+        Set node = paramNodes.Item(i)
+        paramName = node.getAttribute("Name")
+
+        ' Check for Access element
+        Set accessNode = node.SelectSingleNode("Access")
+        If Not accessNode Is Nothing Then
+            If accessNode.Text = "Locked" Then
+                ' Add to locked fields if not already there
+                If Not CollectionContains(lockedFields, paramName) Then
+                    lockedFields.Add paramName, paramName
+                End If
+            End If
+        End If
+    Next i
+
+    Set DetectLockedFields = lockedFields
+End Function
+
 Private Function OrderFieldsByPriority(fieldNames As Collection) As Collection
     ' Order fields: priority fields first (in order), then alphabetical
 
@@ -410,7 +479,7 @@ Private Function OrderFieldsByPriority(fieldNames As Collection) As Collection
     ' Add priority fields first (if they exist)
     For i = LBound(priorityArr) To UBound(priorityArr)
         If CollectionContains(fieldNames, priorityArr(i)) Then
-            orderedFields.Add priorityArr(i)
+            orderedFields.Add priorityArr(i), priorityArr(i)
         End If
     Next i
 
@@ -487,36 +556,183 @@ Private Function ParseParameterData(paramNodes As Object, fieldNames As Collecti
     Set ParseParameterData = paramData
 End Function
 
-Private Sub FormatDataSheet(ws As Worksheet, colCount As Long, rowCount As Long)
-    ' Format the data sheet: text format, freeze panes, protect PTC_WM_NAME column
+Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, lockedFields As Collection, rowCount As Long)
+    ' Format the data sheet with comprehensive conditional formatting and styling
 
     Dim rng As Range
+    Dim col As Long, row As Long
+    Dim fieldName As String
+    Dim colCount As Long
+    Dim isStandardField As Boolean
+    Dim isPartialField As Boolean
+    Dim priorityArr() As String
+    Dim cellRng As Range
+    Dim fc As FormatCondition
+    Dim dataStartRow As Long
 
-    ' Format all data cells as text
+    colCount = orderedFields.Count
+    dataStartRow = 3 ' Data starts at row 3 (row 1 = header, row 2 = marker)
+    priorityArr = Split(PRIORITY_FIELDS, ",")
+
+    ' Format all cells as text
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(rowCount, colCount))
     rng.NumberFormat = "@"
 
-    ' Auto-fit columns
-    rng.Columns.AutoFit
+    ' === DIRECT FORMATTING (applied first, can be overridden by conditional) ===
 
-    ' Freeze first row and first column
-    ws.Activate
-    ws.Cells(2, 2).Select
-    ActiveWindow.FreezePanes = True
+    ' Default white fill for ALL sheet cells (not just data)
+    ws.Cells.Interior.Color = RGB(255, 255, 255)
 
-    ' Protect first column (PTC_WM_NAME) - lock cells and protect sheet
-    ws.Columns(1).Locked = True
-    ws.Range(ws.Cells(1, 2), ws.Cells(rowCount, colCount)).Locked = False
-    ws.Protect Password:="", UserInterfaceOnly:=True, AllowFormattingCells:=True, _
-               AllowFormattingColumns:=True, AllowFormattingRows:=True
-
-    ' Header formatting
+    ' First row: Bold + dark grey fill
     ws.Rows(1).Font.Bold = True
     ws.Rows(1).Interior.Color = RGB(200, 200, 200)
 
-    ' First column formatting (locked indicator)
-    ws.Columns(1).Interior.Color = RGB(240, 240, 240)
+    ' First column: Bold text, dark grey fill
+    ws.Columns(1).Font.Bold = True
+    Set rng = ws.Range(ws.Cells(dataStartRow, 1), ws.Cells(rowCount, 1))
+    rng.Interior.Color = RGB(200, 200, 200)
+
+    ' Borders: Left and right on columns, all borders on data cells
+    For col = 1 To colCount
+        Set rng = ws.Range(ws.Cells(dataStartRow, col), ws.Cells(rowCount, col))
+        ' Left and right borders for column
+        With rng.Borders(xlEdgeLeft)
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+        End With
+        With rng.Borders(xlEdgeRight)
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+        End With
+        ' All borders for each cell
+        With rng.Borders
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+        End With
+    Next col
+
+    ' === CONDITIONAL FORMATTING ===
+
+    For col = 1 To colCount
+        fieldName = CStr(orderedFields(col))
+
+        ' Check if this is a standard (priority) field
+        isStandardField = InStrInArray(fieldName, priorityArr) >= 0
+
+        ' Check if this is a partial field (from marker row)
+        isPartialField = (ws.Cells(2, col).Value = "P")
+
+        ' Set up cell range for data rows
+        Set cellRng = ws.Range(ws.Cells(dataStartRow, col), ws.Cells(rowCount, col))
+        cellRng.FormatConditions.Delete ' Clear existing conditions
+
+        ' Special handling for first column (PTC_WM_NAME) - no conditional formatting needed
+        If col = 1 Then
+            ' Already has dark grey direct formatting, skip conditional formatting
+            GoTo NextColumn
+        End If
+
+        If isStandardField And Not isPartialField Then
+            ' === STANDARD FIELD (full presence) ===
+            ' Green for filled, red for blank
+
+            ' Rule 1: Non-empty = pastel green
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))>0")
+            fc.Interior.Color = RGB(204, 255, 204) ' Pastel green (matches yellow saturation)
+            fc.StopIfTrue = False
+
+            ' Rule 2: Empty = pastel red
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
+            fc.Interior.Color = RGB(255, 204, 204) ' Pastel red (matches yellow saturation)
+            fc.StopIfTrue = False
+
+        ElseIf isStandardField And isPartialField Then
+            ' === STANDARD FIELD with partial presence (missing in some objects) ===
+            ' Green for filled, light grey for missing
+
+            ' Rule 1: Non-empty = pastel green
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))>0")
+            fc.Interior.Color = RGB(204, 255, 204) ' Pastel green
+            fc.StopIfTrue = False
+
+            ' Rule 2: Empty = light grey (missing parameter)
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
+            fc.Interior.Color = RGB(240, 240, 240) ' Light grey
+            fc.StopIfTrue = False
+
+        ElseIf Not isStandardField And isPartialField Then
+            ' === ADDITIONAL FIELD with partial presence ===
+            ' Filled originally = light blue, empty = light grey, user-added = light yellow
+
+            ' For partial additional fields, use direct pastel blue for cells with original data
+            For row = dataStartRow To rowCount
+                If Trim(CStr(ws.Cells(row, col).Value)) <> "" Then
+                    ws.Cells(row, col).Interior.Color = RGB(204, 204, 255) ' Pastel blue (matches yellow saturation)
+                End If
+            Next row
+
+            ' Rule 1: Empty = light grey
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
+            fc.Interior.Color = RGB(240, 240, 240) ' Light grey
+            fc.StopIfTrue = False
+
+        Else
+            ' === ADDITIONAL FIELD (full presence) ===
+            ' Same as standard fields
+            ' Rule 1: Non-empty = pastel green
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))>0")
+            fc.Interior.Color = RGB(204, 255, 204) ' Pastel green
+            fc.StopIfTrue = False
+
+            ' Rule 2: Empty = pastel red
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
+            fc.Interior.Color = RGB(255, 204, 204) ' Pastel red
+            fc.StopIfTrue = False
+        End If
+
+NextColumn:
+        ' Lock columns with locked fields
+        If CollectionContains(lockedFields, fieldName) Then
+            ws.Columns(col).Locked = True
+        Else
+            ws.Columns(col).Locked = False
+        End If
+    Next col
+
+    ' Hide marker row
+    ws.Rows(2).Hidden = True
+
+    ' Auto-fit columns
+    ws.Cells.Columns.AutoFit
+
+    ' Freeze first row (header) and first column
+    ws.Activate
+    ws.Cells(dataStartRow, 2).Select
+    ActiveWindow.FreezePanes = True
+
+    ' Protect sheet with locked columns
+    ws.Protect Password:="", UserInterfaceOnly:=True, AllowFormattingCells:=True, _
+               AllowFormattingColumns:=True, AllowFormattingRows:=True
 End Sub
+
+Private Function InStrInArray(searchFor As String, arr() As String) As Long
+    ' Returns index of string in array, or -1 if not found
+    Dim i As Long
+    For i = LBound(arr) To UBound(arr)
+        If arr(i) = searchFor Then
+            InStrInArray = i
+            Exit Function
+        End If
+    Next i
+    InStrInArray = -1
+End Function
 
 Private Function CreateSheetName(xmlFileName As String) As String
     ' Create sheet name: filename-yyyymmdd_hhmmss.xml
@@ -598,11 +814,20 @@ Public Sub ExportXML()
     End If
 
     ' Read headers and determine field order for XML (alphabetical by parameter name)
+    ' Also detect which columns are locked
     Set headers = New Collection
     Set fieldOrder = New Collection
+    Dim lockedFields As Collection
+    Set lockedFields = New Collection
+
     For col = 1 To lastCol
         fieldName = CStr(dataSheet.Cells(1, col).Value)
         headers.Add fieldName, fieldName
+
+        ' Check if column is locked
+        If dataSheet.Columns(col).Locked Then
+            lockedFields.Add fieldName, fieldName
+        End If
     Next col
 
     ' Sort headers alphabetically for XML output
@@ -659,8 +884,8 @@ Public Sub ExportXML()
                 childNode.Text = cellValue
                 paramNode.appendChild childNode
 
-                ' Add Access=Locked for PTC_WM_NAME
-                If fieldName = "PTC_WM_NAME" Then
+                ' Add Access=Locked for locked fields
+                If CollectionContains(lockedFields, fieldName) Then
                     Set childNode = xmlDoc.createElement("Access")
                     childNode.Text = "Locked"
                     paramNode.appendChild childNode

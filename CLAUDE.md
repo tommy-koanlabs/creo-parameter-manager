@@ -54,15 +54,45 @@ Example parameter structure:
 Columns are ordered dynamically with a priority system:
 
 1. **Priority fields** (in this order, if present): `PTC_WM_NAME`, `CAGE_CODE`, `PART_NUMBER`, `DESCRIPTION_1`, `DESCRIPTION_2`
-2. **Additional fields**: Sorted alphabetically after priority fields
+2. **Additional fields**: Sorted alphabetically after priority fields (excludes priority fields already added)
 
 Example: XML with fields `A`, `CAGE_CODE`, `E`, `DESCRIPTION_1`, `PTC_WM_NAME` becomes:
 ```
 PTC_WM_NAME | CAGE_CODE | DESCRIPTION_1 | A | E
 ```
 
-- Column A (PTC_WM_NAME): Read-only/locked — identifies the CAD object
-- All cells: Formatted as text
+## Cell and Column Formatting
+
+### Visual Structure
+- **First column**: Bold text with grey fill (#C8C8C8) - identifies CAD objects
+- **First row**: Bold text - column headers
+- **Marker row** (row 2): Hidden row containing "F" (full field) or "P" (partial field) markers
+- **Data rows**: Start at row 3, all cells have borders and white default fill
+- **All cells**: Formatted as text to prevent Excel from misinterpreting values
+
+### Color-Coded Field Status
+
+**Standard fields** (PTC_WM_NAME, CAGE_CODE, PART_NUMBER, DESCRIPTION_1, DESCRIPTION_2):
+- **Pastel green** (RGB 204, 255, 204): Filled - good status
+- **Pastel red** (RGB 255, 204, 204): Blank - needs attention
+- **Light grey** (RGB 240, 240, 240): Missing from object when present in others
+- **Note**: PTC_WM_NAME column has dark grey fill and no conditional formatting (always present)
+
+**Additional fields with full presence** (all objects have this parameter):
+- **Pastel green** (RGB 204, 255, 204): Filled
+- **Pastel red** (RGB 255, 204, 204): Blank
+
+**Additional fields with partial presence** (some objects have this parameter, some don't):
+- **Pastel blue** (RGB 204, 204, 255): Original data from XML
+- **Light grey** (RGB 240, 240, 240): Parameter missing (empty cell)
+- **Light yellow** (RGB 255, 255, 204): User-added data (automatically applied when user fills empty cell)
+
+**Color saturation**: All pastel colors (green, red, blue, yellow) have matching saturation levels for visual consistency
+
+### Locked Columns
+- Any field with `<Access>Locked</Access>` in the XML is locked (read-only)
+- Typically `PTC_WM_NAME` is locked
+- Lock status is preserved during export
 
 ## Implementation Architecture
 
@@ -82,7 +112,7 @@ When exporting from spreadsheet back to XML:
 - **Optional fields:** DESCRIPTION_2 and any dynamically-detected fields (blanks allowed)
 - **Blank handling:** Use `<Value></Value>` format
 - **Row count:** Must match original XML parameter count
-- **PTC_WM_NAME:** Must match original values (verify despite column lock)
+- **Locked fields:** Preserved from import — columns that were locked in Excel will have `<Access>Locked</Access>` in exported XML
 
 ## VBA Development Notes
 
@@ -90,12 +120,14 @@ When exporting from spreadsheet back to XML:
 - ListBox controls: ActiveX (`ListBox1` for XML files, `ListBox2` for sheets)
 - **Refresh strategy:** Combined approach — `Workbook_Activate` event auto-refreshes XML file list, plus manual Refresh button for on-demand updates
 - **Dynamic field detection:** Iterate XML parameter names until first duplicate to determine group size
+- **Marker row system:** Hidden row 2 contains "F" or "P" to indicate full/partial field presence
+- **Automatic color updates:** `Workbook_SheetChange` event detects user-added data in partial fields and applies yellow highlighting
 
 ### VBA Module Structure
 
 | Module | Key Procedures |
 |--------|----------------|
-| `modParamManager` | `ImportXML`, `ExportXML`, `RefreshXMLFileList`, `RefreshSheetList` |
+| `modParamManager` | `ImportXML`, `ExportXML`, `RefreshXMLFileList`, `RefreshSheetList`, `DetectLockedFields` |
 | `ThisWorkbook` | `Workbook_Open`, `Workbook_Activate` events |
 
 ### Key Constants (in modParamManager)
