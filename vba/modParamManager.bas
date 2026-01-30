@@ -902,7 +902,7 @@ Public Sub ExportXML()
     xmlDoc.appendChild rootNode
 
     ' Write parameters in alphabetical order within each CAD object group
-    For row = 2 To lastRow
+    For row = 3 To lastRow  ' Start at row 3 (row 2 is hidden marker row)
         For Each fieldName In fieldOrder
             ' Find column for this field
             col = GetColumnForField(dataSheet, fieldName, lastCol)
@@ -946,7 +946,7 @@ Public Sub ExportXML()
     ' Refresh XML list
     RefreshXMLFileList
 
-    MsgBox "Exported " & (lastRow - 1) & " CAD objects to: " & vbCrLf & outputXmlPath, vbInformation
+    MsgBox "Exported " & (lastRow - 2) & " CAD objects to: " & vbCrLf & outputXmlPath, vbInformation
 
     Exit Sub
 
@@ -974,7 +974,7 @@ Private Function ValidateExportData(ws As Worksheet, headers As Collection, last
 
         If col > 0 Then
             blankCount = 0
-            For row = 2 To lastRow
+            For row = 3 To lastRow  ' Start at row 3 (row 2 is hidden marker row)
                 cellValue = Trim(CStr(ws.Cells(row, col).Value))
                 If cellValue = "" Then
                     blankCount = blankCount + 1
