@@ -275,6 +275,7 @@ Public Sub ImportXML()
     Dim paramNodes As Object
     Dim fieldNames As Collection
     Dim orderedFields As Collection
+    Dim lockedFields As Collection
     Dim paramData As Collection
     Dim cadObjectData As Object
     Dim i As Long, row As Long, col As Long
@@ -324,6 +325,9 @@ Public Sub ImportXML()
         Exit Sub
     End If
 
+    ' Detect locked fields
+    Set lockedFields = DetectLockedFields(paramNodes)
+
     ' Order fields by priority
     Set orderedFields = OrderFieldsByPriority(fieldNames)
 
@@ -354,7 +358,7 @@ Public Sub ImportXML()
     Next i
 
     ' Format sheet
-    FormatDataSheet newSheet, orderedFields.Count, paramData.Count + 1
+    FormatDataSheet newSheet, orderedFields, lockedFields, paramData.Count + 1
 
     ' Refresh sheet list
     RefreshSheetList
@@ -392,6 +396,36 @@ Private Function DetectFieldNames(paramNodes As Object) As Collection
     Set DetectFieldNames = fieldNames
 End Function
 
+Private Function DetectLockedFields(paramNodes As Object) As Collection
+    ' Detect which fields have Access=Locked anywhere in the XML
+
+    Dim lockedFields As Collection
+    Dim node As Object
+    Dim paramName As String
+    Dim accessNode As Object
+    Dim i As Long
+
+    Set lockedFields = New Collection
+
+    For i = 0 To paramNodes.Length - 1
+        Set node = paramNodes.Item(i)
+        paramName = node.getAttribute("Name")
+
+        ' Check for Access element
+        Set accessNode = node.SelectSingleNode("Access")
+        If Not accessNode Is Nothing Then
+            If accessNode.Text = "Locked" Then
+                ' Add to locked fields if not already there
+                If Not CollectionContains(lockedFields, paramName) Then
+                    lockedFields.Add paramName, paramName
+                End If
+            End If
+        End If
+    Next i
+
+    Set DetectLockedFields = lockedFields
+End Function
+
 Private Function OrderFieldsByPriority(fieldNames As Collection) As Collection
     ' Order fields: priority fields first (in order), then alphabetical
 
@@ -410,7 +444,7 @@ Private Function OrderFieldsByPriority(fieldNames As Collection) As Collection
     ' Add priority fields first (if they exist)
     For i = LBound(priorityArr) To UBound(priorityArr)
         If CollectionContains(fieldNames, priorityArr(i)) Then
-            orderedFields.Add priorityArr(i)
+            orderedFields.Add priorityArr(i), priorityArr(i)
         End If
     Next i
 
@@ -487,10 +521,15 @@ Private Function ParseParameterData(paramNodes As Object, fieldNames As Collecti
     Set ParseParameterData = paramData
 End Function
 
-Private Sub FormatDataSheet(ws As Worksheet, colCount As Long, rowCount As Long)
-    ' Format the data sheet: text format, freeze panes, protect PTC_WM_NAME column
+Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, lockedFields As Collection, rowCount As Long)
+    ' Format the data sheet: text format, freeze panes, protect locked columns
 
     Dim rng As Range
+    Dim col As Long
+    Dim fieldName As String
+    Dim colCount As Long
+
+    colCount = orderedFields.Count
 
     ' Format all data cells as text
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(rowCount, colCount))
@@ -504,18 +543,46 @@ Private Sub FormatDataSheet(ws As Worksheet, colCount As Long, rowCount As Long)
     ws.Cells(2, 2).Select
     ActiveWindow.FreezePanes = True
 
-    ' Protect first column (PTC_WM_NAME) - lock cells and protect sheet
-    ws.Columns(1).Locked = True
-    ws.Range(ws.Cells(1, 2), ws.Cells(rowCount, colCount)).Locked = False
+    ' Lock all locked fields and add conditional formatting for missing fields
+    Dim hasEmptyCells As Boolean
+    Dim r As Long
+    Dim cellRng As Range
+    Dim fc As FormatCondition
+
+    For col = 1 To colCount
+        fieldName = CStr(orderedFields(col))
+        If CollectionContains(lockedFields, fieldName) Then
+            ws.Columns(col).Locked = True
+            ws.Columns(col).Interior.Color = RGB(240, 240, 240) ' Light grey for locked
+        Else
+            ws.Columns(col).Locked = False
+
+            ' Check if this column has empty cells (field missing in some objects)
+            hasEmptyCells = False
+            For r = 2 To rowCount
+                If Trim(CStr(ws.Cells(r, col).Value)) = "" Then
+                    hasEmptyCells = True
+                    Exit For
+                End If
+            Next r
+
+            ' Add conditional formatting for empty cells in this column
+            If hasEmptyCells Then
+                Set cellRng = ws.Range(ws.Cells(2, col), ws.Cells(rowCount, col))
+                cellRng.FormatConditions.Delete ' Clear existing conditions
+                Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
+                fc.Interior.Color = RGB(240, 240, 240) ' Light grey for missing fields
+            End If
+        End If
+    Next col
+
+    ' Protect sheet with locked columns
     ws.Protect Password:="", UserInterfaceOnly:=True, AllowFormattingCells:=True, _
                AllowFormattingColumns:=True, AllowFormattingRows:=True
 
     ' Header formatting
     ws.Rows(1).Font.Bold = True
     ws.Rows(1).Interior.Color = RGB(200, 200, 200)
-
-    ' First column formatting (locked indicator)
-    ws.Columns(1).Interior.Color = RGB(240, 240, 240)
 End Sub
 
 Private Function CreateSheetName(xmlFileName As String) As String
@@ -598,11 +665,20 @@ Public Sub ExportXML()
     End If
 
     ' Read headers and determine field order for XML (alphabetical by parameter name)
+    ' Also detect which columns are locked
     Set headers = New Collection
     Set fieldOrder = New Collection
+    Dim lockedFields As Collection
+    Set lockedFields = New Collection
+
     For col = 1 To lastCol
         fieldName = CStr(dataSheet.Cells(1, col).Value)
         headers.Add fieldName, fieldName
+
+        ' Check if column is locked
+        If dataSheet.Columns(col).Locked Then
+            lockedFields.Add fieldName, fieldName
+        End If
     Next col
 
     ' Sort headers alphabetically for XML output
@@ -659,8 +735,8 @@ Public Sub ExportXML()
                 childNode.Text = cellValue
                 paramNode.appendChild childNode
 
-                ' Add Access=Locked for PTC_WM_NAME
-                If fieldName = "PTC_WM_NAME" Then
+                ' Add Access=Locked for locked fields
+                If CollectionContains(lockedFields, fieldName) Then
                     Set childNode = xmlDoc.createElement("Access")
                     childNode.Text = "Locked"
                     paramNode.appendChild childNode

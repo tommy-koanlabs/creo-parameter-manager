@@ -54,15 +54,24 @@ Example parameter structure:
 Columns are ordered dynamically with a priority system:
 
 1. **Priority fields** (in this order, if present): `PTC_WM_NAME`, `CAGE_CODE`, `PART_NUMBER`, `DESCRIPTION_1`, `DESCRIPTION_2`
-2. **Additional fields**: Sorted alphabetically after priority fields
+2. **Additional fields**: Sorted alphabetically after priority fields (excludes priority fields already added)
 
 Example: XML with fields `A`, `CAGE_CODE`, `E`, `DESCRIPTION_1`, `PTC_WM_NAME` becomes:
 ```
 PTC_WM_NAME | CAGE_CODE | DESCRIPTION_1 | A | E
 ```
 
-- Column A (PTC_WM_NAME): Read-only/locked — identifies the CAD object
-- All cells: Formatted as text
+## Cell and Column Formatting
+
+- **Locked columns**: Any field with `<Access>Locked</Access>` in the XML is locked and displayed with light grey background
+  - Typically `PTC_WM_NAME` is locked (identifies the CAD object)
+  - Additional fields may also be locked depending on Creo configuration
+  - Lock status is preserved during export
+- **Missing fields**: Fields that don't exist in all CAD objects have conditional formatting
+  - Empty cells are displayed with light grey background
+  - When user enters a value, grey background automatically disappears
+  - Allows adding parameters to individual objects
+- **All cells**: Formatted as text to prevent Excel from misinterpreting values
 
 ## Implementation Architecture
 
@@ -82,7 +91,7 @@ When exporting from spreadsheet back to XML:
 - **Optional fields:** DESCRIPTION_2 and any dynamically-detected fields (blanks allowed)
 - **Blank handling:** Use `<Value></Value>` format
 - **Row count:** Must match original XML parameter count
-- **PTC_WM_NAME:** Must match original values (verify despite column lock)
+- **Locked fields:** Preserved from import — columns that were locked in Excel will have `<Access>Locked</Access>` in exported XML
 
 ## VBA Development Notes
 
@@ -95,7 +104,7 @@ When exporting from spreadsheet back to XML:
 
 | Module | Key Procedures |
 |--------|----------------|
-| `modParamManager` | `ImportXML`, `ExportXML`, `RefreshXMLFileList`, `RefreshSheetList` |
+| `modParamManager` | `ImportXML`, `ExportXML`, `RefreshXMLFileList`, `RefreshSheetList`, `DetectLockedFields` |
 | `ThisWorkbook` | `Workbook_Open`, `Workbook_Activate` events |
 
 ### Key Constants (in modParamManager)
