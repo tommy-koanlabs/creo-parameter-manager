@@ -417,7 +417,7 @@ Private Function DetectFieldNames(paramNodes As Object) As Collection
     Set fieldNames = New Collection
 
     For i = 0 To paramNodes.Length - 1
-        Set node = paramNodes.Item(i)
+        Set node = paramNodes.item(i)
         paramName = node.getAttribute("Name")
 
         ' Check if already seen
@@ -443,7 +443,7 @@ Private Function DetectLockedFields(paramNodes As Object) As Collection
     Set lockedFields = New Collection
 
     For i = 0 To paramNodes.Length - 1
-        Set node = paramNodes.Item(i)
+        Set node = paramNodes.item(i)
         paramName = node.getAttribute("Name")
 
         ' Check for Access element
@@ -534,7 +534,7 @@ Private Function ParseParameterData(paramNodes As Object, fieldNames As Collecti
             Set cadObject = CreateObject("Scripting.Dictionary")
         End If
 
-        Set node = paramNodes.Item(i)
+        Set node = paramNodes.item(i)
         paramName = node.getAttribute("Name")
 
         ' Get value
@@ -580,17 +580,30 @@ Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, locked
 
     ' === DIRECT FORMATTING (applied first, can be overridden by conditional) ===
 
-    ' Default white fill for ALL sheet cells (not just data)
+    ' Default white fill for ALL sheet cells
     ws.Cells.Interior.Color = RGB(255, 255, 255)
 
-    ' First row: Bold + dark grey fill
+    ' Add all borders to column header cells
+    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(1, colCount))
+    With rng.Borders
+        .LineStyle = xlContinuous
+        .Weight = xlThin
+        .Color = RGB(0, 0, 0)
+    End With
+    
+    ' First row: Bold + dark grey fill + thick bottom border
     ws.Rows(1).Font.Bold = True
     ws.Rows(1).Interior.Color = RGB(200, 200, 200)
+    
+    With ws.Rows(1).Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .Color = RGB(0, 0, 0)
+        .Weight = xlThick
+    End With
 
-    ' First column: Bold text, dark grey fill
-    ws.Columns(1).Font.Bold = True
-    Set rng = ws.Range(ws.Cells(dataStartRow, 1), ws.Cells(rowCount, 1))
-    rng.Interior.Color = RGB(200, 200, 200)
+
+
+
 
     ' Borders: Left and right on columns, all borders on data cells
     For col = 1 To colCount
@@ -609,6 +622,32 @@ Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, locked
             .LineStyle = xlContinuous
             .Weight = xlThin
         End With
+    Next col
+    
+    ' First column: Bold text, dark grey fill (entire column) + thick right border
+    ws.Columns(1).Font.Bold = True
+    ws.Columns(1).Interior.Color = RGB(200, 200, 200)
+    With ws.Columns(1).Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .Color = RGB(0, 0, 0)
+        .Weight = xlThick
+    End With
+
+    ' === TEXT ALIGNMENT ===
+
+    ' All sheet cells: middle center aligned
+    ws.Cells.VerticalAlignment = xlCenter
+    ws.Cells.HorizontalAlignment = xlCenter
+
+    ' Specific columns: left aligned with indent (data rows only, headers stay center)
+    For col = 1 To colCount
+        fieldName = CStr(orderedFields(col))
+
+        If fieldName = "PTC_WM_NAME" Or fieldName = "DESCRIPTION_1" Or fieldName = "DESCRIPTION_2" Then
+            Set rng = ws.Range(ws.Cells(dataStartRow, col), ws.Cells(rowCount, col))
+            rng.HorizontalAlignment = xlLeft
+            rng.IndentLevel = 1
+        End If
     Next col
 
     ' === CONDITIONAL FORMATTING ===
@@ -1031,3 +1070,5 @@ End Sub
 Public Sub btnRefresh_Click()
     RefreshAllLists
 End Sub
+
+
