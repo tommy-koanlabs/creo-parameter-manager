@@ -14,8 +14,39 @@ Private Const PRIORITY_FIELDS As String = "PTC_WM_NAME,CAGE_CODE,PART_NUMBER,DES
 Private Const REQUIRED_FIELDS As String = "CAGE_CODE,DESCRIPTION_1,PART_NUMBER,PTC_WM_NAME"
 
 ' =============================================================================
-' PATH UTILITIES
+' UTILITIES
 ' =============================================================================
+
+Private Function CreateXMLDocument() As Object
+    ' Creates an MSXML DOM document, trying multiple versions for compatibility
+    Dim xmlDoc As Object
+
+    On Error Resume Next
+
+    ' Try MSXML 6.0 first (preferred)
+    Set xmlDoc = CreateObject("MSXML2.DOMDocument60")
+    If xmlDoc Is Nothing Then
+        ' Try MSXML 3.0
+        Set xmlDoc = CreateObject("MSXML2.DOMDocument30")
+    End If
+    If xmlDoc Is Nothing Then
+        ' Try generic version
+        Set xmlDoc = CreateObject("MSXML2.DOMDocument")
+    End If
+    If xmlDoc Is Nothing Then
+        ' Try Microsoft.XMLDOM as last resort
+        Set xmlDoc = CreateObject("Microsoft.XMLDOM")
+    End If
+
+    On Error GoTo 0
+
+    If Not xmlDoc Is Nothing Then
+        xmlDoc.Async = False
+        xmlDoc.validateOnParse = False
+    End If
+
+    Set CreateXMLDocument = xmlDoc
+End Function
 
 Private Function GetLocalPath(ByVal pathStr As String) As String
     ' Converts SharePoint/OneDrive URL to local sync folder path
@@ -268,9 +299,11 @@ Public Sub ImportXML()
     xmlPath = GetLocalPath(ThisWorkbook.Path) & "\" & selectedFile
 
     ' Load XML
-    Set xmlDoc = CreateObject("MSXML2.DOMDocument60")
-    xmlDoc.Async = False
-    xmlDoc.validateOnParse = False
+    Set xmlDoc = CreateXMLDocument()
+    If xmlDoc Is Nothing Then
+        MsgBox "Could not create XML parser. MSXML may not be installed.", vbCritical
+        Exit Sub
+    End If
 
     If Not xmlDoc.Load(xmlPath) Then
         MsgBox "Failed to load XML file: " & xmlDoc.parseError.reason, vbCritical
@@ -589,8 +622,11 @@ Public Sub ExportXML()
     End If
 
     ' Create XML document
-    Set xmlDoc = CreateObject("MSXML2.DOMDocument60")
-    xmlDoc.Async = False
+    Set xmlDoc = CreateXMLDocument()
+    If xmlDoc Is Nothing Then
+        MsgBox "Could not create XML parser. MSXML may not be installed.", vbCritical
+        Exit Sub
+    End If
 
     ' Add XML declaration
     Dim xmlDecl As Object
