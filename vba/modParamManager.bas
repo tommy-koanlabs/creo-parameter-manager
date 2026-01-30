@@ -358,8 +358,8 @@ Public Sub ImportXML()
         newSheet.Cells(1, col).Font.Bold = True
     Next col
 
-    ' Write data rows
-    row = 2
+    ' Write data rows (starting at row 3, row 2 will be marker row)
+    row = 3
     For i = 1 To paramData.Count
         Set cadObjectData = paramData(i)
         For col = 1 To orderedFields.Count
@@ -370,8 +370,30 @@ Public Sub ImportXML()
         row = row + 1
     Next i
 
+    ' Add marker row (row 2) to track which fields are partial
+    ' "F" = Full field (all objects have it), "P" = Partial field (some have it)
+    Dim hasEmpty As Boolean, hasFilled As Boolean
+    For col = 1 To orderedFields.Count
+        hasEmpty = False
+        hasFilled = False
+        For row = 3 To paramData.Count + 2
+            If Trim(CStr(newSheet.Cells(row, col).Value)) = "" Then
+                hasEmpty = True
+            Else
+                hasFilled = True
+            End If
+        Next row
+
+        ' Mark column type
+        If hasEmpty And hasFilled Then
+            newSheet.Cells(2, col).Value = "P" ' Partial field
+        Else
+            newSheet.Cells(2, col).Value = "F" ' Full field
+        End If
+    Next col
+
     ' Format sheet
-    FormatDataSheet newSheet, orderedFields, lockedFields, paramData.Count + 1
+    FormatDataSheet newSheet, orderedFields, lockedFields, paramData.Count + 2 ' +2 for header and marker row
 
     ' Refresh sheet list
     RefreshSheetList
@@ -535,76 +557,182 @@ Private Function ParseParameterData(paramNodes As Object, fieldNames As Collecti
 End Function
 
 Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, lockedFields As Collection, rowCount As Long)
-    ' Format the data sheet: text format, freeze panes, protect locked columns
+    ' Format the data sheet with comprehensive conditional formatting and styling
 
     Dim rng As Range
-    Dim col As Long
+    Dim col As Long, row As Long
     Dim fieldName As String
     Dim colCount As Long
+    Dim isStandardField As Boolean
+    Dim isPartialField As Boolean
+    Dim priorityArr() As String
+    Dim cellRng As Range
+    Dim fc As FormatCondition
+    Dim dataStartRow As Long
 
     colCount = orderedFields.Count
+    dataStartRow = 3 ' Data starts at row 3 (row 1 = header, row 2 = marker)
+    priorityArr = Split(PRIORITY_FIELDS, ",")
 
-    ' Format all data cells as text
+    ' Format all cells as text
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(rowCount, colCount))
     rng.NumberFormat = "@"
 
-    ' Auto-fit columns
-    rng.Columns.AutoFit
+    ' === DIRECT FORMATTING (applied first, can be overridden by conditional) ===
 
-    ' Freeze first row and first column
-    ws.Activate
-    ws.Cells(2, 2).Select
-    ActiveWindow.FreezePanes = True
+    ' Default white fill for all data cells
+    Set rng = ws.Range(ws.Cells(dataStartRow, 1), ws.Cells(rowCount, colCount))
+    rng.Interior.Color = RGB(255, 255, 255)
 
-    ' Lock all locked fields and add conditional formatting for missing fields
-    Dim hasEmptyCells As Boolean
-    Dim r As Long
-    Dim cellRng As Range
-    Dim fc As FormatCondition
+    ' First column: Bold text, grey fill
+    ws.Columns(1).Font.Bold = True
+    Set rng = ws.Range(ws.Cells(dataStartRow, 1), ws.Cells(rowCount, 1))
+    rng.Interior.Color = RGB(200, 200, 200)
+
+    ' First row: Bold (already done in import)
+    ws.Rows(1).Font.Bold = True
+
+    ' Borders: Left and right on columns, all borders on data cells
+    For col = 1 To colCount
+        Set rng = ws.Range(ws.Cells(dataStartRow, col), ws.Cells(rowCount, col))
+        ' Left and right borders for column
+        With rng.Borders(xlEdgeLeft)
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+        End With
+        With rng.Borders(xlEdgeRight)
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+        End With
+        ' All borders for each cell
+        With rng.Borders
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+        End With
+    Next col
+
+    ' === CONDITIONAL FORMATTING ===
 
     For col = 1 To colCount
         fieldName = CStr(orderedFields(col))
+
+        ' Check if this is a standard (priority) field
+        isStandardField = CollectionContains(lockedFields, fieldName) Or _
+                          InStrInArray(fieldName, priorityArr) >= 0
+
+        ' Check if this is a partial field (from marker row)
+        isPartialField = (ws.Cells(2, col).Value = "P")
+
+        ' Set up cell range for data rows
+        Set cellRng = ws.Range(ws.Cells(dataStartRow, col), ws.Cells(rowCount, col))
+        cellRng.FormatConditions.Delete ' Clear existing conditions
+
+        If isStandardField And Not isPartialField Then
+            ' === STANDARD FIELD (full presence) ===
+            ' Green for filled, red for blank
+
+            ' Rule 1: Non-empty = light green
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))>0")
+            fc.Interior.Color = RGB(144, 238, 144) ' Light green
+            fc.StopIfTrue = False
+
+            ' Rule 2: Empty = light red
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
+            fc.Interior.Color = RGB(255, 204, 203) ' Light red
+            fc.StopIfTrue = False
+
+        ElseIf isStandardField And isPartialField Then
+            ' === STANDARD FIELD with partial presence (shouldn't happen but handle it) ===
+            ' Non-empty = green, empty = dark red with bold
+
+            ' Rule 1: Non-empty = light green
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))>0")
+            fc.Interior.Color = RGB(144, 238, 144) ' Light green
+            fc.StopIfTrue = False
+
+            ' Rule 2: Empty = dark red, bold
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
+            fc.Interior.Color = RGB(255, 0, 0) ' Dark red
+            fc.Font.Bold = True
+            fc.StopIfTrue = False
+
+        ElseIf Not isStandardField And isPartialField Then
+            ' === ADDITIONAL FIELD with partial presence ===
+            ' Filled originally = light blue, empty = light grey, user-added = light yellow
+
+            ' For partial additional fields, use direct light blue for cells with original data
+            For row = dataStartRow To rowCount
+                If Trim(CStr(ws.Cells(row, col).Value)) <> "" Then
+                    ws.Cells(row, col).Interior.Color = RGB(173, 216, 230) ' Light blue
+                End If
+            Next row
+
+            ' Rule 1: Empty = light grey
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
+            fc.Interior.Color = RGB(240, 240, 240) ' Light grey
+            fc.StopIfTrue = False
+
+            ' Rule 2: Non-empty = light yellow (will show for user-added, overridden by direct blue for original)
+            ' Actually, we can't distinguish user-added from original with conditional formatting alone
+            ' The light blue direct format will remain for original data
+            ' When user types in an empty (grey) cell, they should manually change color or we need event handler
+
+        Else
+            ' === ADDITIONAL FIELD (full presence) ===
+            ' Same as standard fields
+            ' Rule 1: Non-empty = light green
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))>0")
+            fc.Interior.Color = RGB(144, 238, 144) ' Light green
+            fc.StopIfTrue = False
+
+            ' Rule 2: Empty = light red
+            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
+            fc.Interior.Color = RGB(255, 204, 203) ' Light red
+            fc.StopIfTrue = False
+        End If
+
+        ' Lock columns with locked fields
         If CollectionContains(lockedFields, fieldName) Then
             ws.Columns(col).Locked = True
-            ws.Columns(col).Interior.Color = RGB(240, 240, 240) ' Light grey for locked
         Else
             ws.Columns(col).Locked = False
-
-            ' Check if this column has empty cells (field missing in some objects)
-            hasEmptyCells = False
-            For r = 2 To rowCount
-                If Trim(CStr(ws.Cells(r, col).Value)) = "" Then
-                    hasEmptyCells = True
-                    Exit For
-                End If
-            Next r
-
-            ' Add conditional formatting for columns with partial field presence
-            If hasEmptyCells Then
-                Set cellRng = ws.Range(ws.Cells(2, col), ws.Cells(rowCount, col))
-                cellRng.FormatConditions.Delete ' Clear existing conditions
-
-                ' Rule 1 (Priority 1): Non-empty cells = pale yellow (parameter present/added)
-                Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))>0")
-                fc.Interior.Color = RGB(255, 255, 204) ' Pale yellow for present/added fields
-                fc.StopIfTrue = False
-
-                ' Rule 2 (Priority 2): Empty cells = grey (parameter missing)
-                Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
-                fc.Interior.Color = RGB(240, 240, 240) ' Light grey for missing fields
-                fc.StopIfTrue = False
-            End If
         End If
     Next col
+
+    ' Hide marker row
+    ws.Rows(2).Hidden = True
+
+    ' Auto-fit columns
+    ws.Cells.Columns.AutoFit
+
+    ' Freeze first row (header) and first column
+    ws.Activate
+    ws.Cells(dataStartRow, 2).Select
+    ActiveWindow.FreezePanes = True
 
     ' Protect sheet with locked columns
     ws.Protect Password:="", UserInterfaceOnly:=True, AllowFormattingCells:=True, _
                AllowFormattingColumns:=True, AllowFormattingRows:=True
-
-    ' Header formatting
-    ws.Rows(1).Font.Bold = True
-    ws.Rows(1).Interior.Color = RGB(200, 200, 200)
 End Sub
+
+Private Function InStrInArray(searchFor As String, arr() As String) As Long
+    ' Returns index of string in array, or -1 if not found
+    Dim i As Long
+    For i = LBound(arr) To UBound(arr)
+        If arr(i) = searchFor Then
+            InStrInArray = i
+            Exit Function
+        End If
+    Next i
+    InStrInArray = -1
+End Function
 
 Private Function CreateSheetName(xmlFileName As String) As String
     ' Create sheet name: filename-yyyymmdd_hhmmss.xml

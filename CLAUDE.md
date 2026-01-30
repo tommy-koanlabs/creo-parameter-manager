@@ -63,17 +63,33 @@ PTC_WM_NAME | CAGE_CODE | DESCRIPTION_1 | A | E
 
 ## Cell and Column Formatting
 
-- **Locked columns**: Any field with `<Access>Locked</Access>` in the XML is locked and displayed with light grey background
-  - Typically `PTC_WM_NAME` is locked (identifies the CAD object)
-  - Additional fields may also be locked depending on Creo configuration
-  - Lock status is preserved during export
-- **Partial field presence** (parameter exists in some objects but not others):
-  - Empty cells (parameter missing): Light grey background
-  - Non-empty cells (parameter present or user-added): Pale yellow background
-  - When user enters a value in a grey cell, it automatically turns pale yellow
-  - Visual indicators: Grey = missing, Yellow = present/added, No color = field exists in all objects
-  - Allows adding parameters to individual objects while maintaining clear visual status
+### Visual Structure
+- **First column**: Bold text with grey fill (#C8C8C8) - identifies CAD objects
+- **First row**: Bold text - column headers
+- **Marker row** (row 2): Hidden row containing "F" (full field) or "P" (partial field) markers
+- **Data rows**: Start at row 3, all cells have borders and white default fill
 - **All cells**: Formatted as text to prevent Excel from misinterpreting values
+
+### Color-Coded Field Status
+
+**Standard fields** (PTC_WM_NAME, CAGE_CODE, PART_NUMBER, DESCRIPTION_1, DESCRIPTION_2):
+- **Light green** (RGB 144, 238, 144): Filled - good status
+- **Light red** (RGB 255, 204, 203): Blank - needs attention
+- **Dark red + bold** (RGB 255, 0, 0): Missing from object when present in others (error condition, should not occur)
+
+**Additional fields with full presence** (all objects have this parameter):
+- **Light green**: Filled
+- **Light red**: Blank
+
+**Additional fields with partial presence** (some objects have this parameter, some don't):
+- **Light blue** (RGB 173, 216, 230): Original data from XML
+- **Light grey** (RGB 240, 240, 240): Parameter missing (empty cell)
+- **Light yellow** (RGB 255, 255, 204): User-added data (automatically applied when user fills empty cell)
+
+### Locked Columns
+- Any field with `<Access>Locked</Access>` in the XML is locked (read-only)
+- Typically `PTC_WM_NAME` is locked
+- Lock status is preserved during export
 
 ## Implementation Architecture
 
@@ -101,6 +117,8 @@ When exporting from spreadsheet back to XML:
 - ListBox controls: ActiveX (`ListBox1` for XML files, `ListBox2` for sheets)
 - **Refresh strategy:** Combined approach — `Workbook_Activate` event auto-refreshes XML file list, plus manual Refresh button for on-demand updates
 - **Dynamic field detection:** Iterate XML parameter names until first duplicate to determine group size
+- **Marker row system:** Hidden row 2 contains "F" or "P" to indicate full/partial field presence
+- **Automatic color updates:** `Workbook_SheetChange` event detects user-added data in partial fields and applies yellow highlighting
 
 ### VBA Module Structure
 

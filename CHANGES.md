@@ -1,5 +1,48 @@
 # Changes Summary
 
+## New Features
+
+### Enhanced Conditional Formatting System
+**Feature**: Comprehensive color-coded formatting system for standard and additional parameters with automatic detection of user-added data.
+
+**Color Scheme**:
+
+*Standard fields (PTC_WM_NAME, CAGE_CODE, PART_NUMBER, DESCRIPTION_1, DESCRIPTION_2):*
+- Light green (RGB 144, 238, 144): Filled
+- Light red (RGB 255, 204, 203): Blank
+- Dark red + bold (RGB 255, 0, 0): Missing from object (error, shouldn't occur)
+
+*Additional fields - full presence:*
+- Light green: Filled
+- Light red: Blank
+
+*Additional fields - partial presence:*
+- Light blue (RGB 173, 216, 230): Original data from XML
+- Light grey (RGB 240, 240, 240): Missing (empty cell)
+- Light yellow (RGB 255, 255, 204): User-added data (auto-applied)
+
+**Import Formatting**:
+- First column: Bold text, grey fill (#C8C8C8)
+- First row: Bold headers
+- All data cells: White fill, bordered
+- Marker row (row 2): Hidden, contains "F" (full) or "P" (partial) markers
+
+**Implementation**:
+- Added marker row system to track field presence type
+- Rewrote `FormatDataSheet()` with comprehensive conditional formatting rules
+- Added `Workbook_SheetChange` event handler in `ThisWorkbook.cls` to detect user additions
+- When user fills empty cell in partial field, automatically changes from grey to yellow
+- Added `InStrInArray()` helper function to check if field is standard
+
+**Technical Details**:
+- Data rows now start at row 3 (row 1 = headers, row 2 = markers)
+- Marker row contains "F" for full fields, "P" for partial fields
+- Direct formatting (borders, first column) applied before conditional formatting
+- Conditional formatting uses formulas like `=LEN(TRIM(cell))>0`
+- Event handler disables events during processing to prevent recursion
+
+---
+
 ## Bug Fixes
 
 ### 1. Fixed List Refresh "Subscript out of range" Error
