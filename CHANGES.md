@@ -2,7 +2,21 @@
 
 ## Bug Fixes
 
-### 1. Fixed Parameter Duplication Issue
+### 1. Fixed List Refresh "Subscript out of range" Error
+**Problem**: RefreshXMLFileList and RefreshSheetList were throwing "Subscript out of range" errors on subsequent refreshes after the first successful load.
+
+**Root Cause**: The bubble sort algorithms were manipulating VBA Collections during sorting by removing and adding items. When you remove items from a Collection, the indices shift, causing subsequent accesses to `xmlFiles(j-1)` or `dataSheets(j-1)` to be out of range.
+
+**Solution**: Replaced Collection-based sorting with array-based sorting:
+- Collect items into dynamic arrays instead of Collections
+- Perform bubble sort on arrays (stable indices during swaps)
+- Populate ListBox from sorted arrays
+
+**Files Changed**:
+- `RefreshXMLFileList()` in modParamManager.bas:117-203
+- `RefreshSheetList()` in modParamManager.bas:205-266
+
+### 2. Fixed Parameter Duplication Issue
 **Problem**: Parameters were appearing duplicated - once in priority order, then again in alphabetical order.
 
 **Root Cause**: In `OrderFieldsByPriority` function, priority fields were added to the `orderedFields` collection without a key (line 413). When `CollectionContains` later checked for these fields by key, it couldn't find them, causing all priority fields to be added again as "additional fields".

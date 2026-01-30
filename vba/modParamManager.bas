@@ -122,10 +122,11 @@ Public Sub RefreshXMLFileList()
     Dim fso As Object
     Dim folder As Object
     Dim file As Object
-    Dim xmlFiles As Collection
-    Dim fileDates As Collection
     Dim workbookPath As String
     Dim i As Long, j As Long
+    Dim fileCount As Long
+    Dim fileNames() As String
+    Dim fileDates() As Date
     Dim tempName As String
     Dim tempDate As Date
 
@@ -134,8 +135,6 @@ Public Sub RefreshXMLFileList()
     Set ws = ThisWorkbook.Sheets(1)
     Set lb = ws.OLEObjects("ListBox1").Object
     Set fso = CreateObject("Scripting.FileSystemObject")
-    Set xmlFiles = New Collection
-    Set fileDates = New Collection
 
     workbookPath = ThisWorkbook.Path
     If workbookPath = "" Then
@@ -149,48 +148,53 @@ Public Sub RefreshXMLFileList()
 
     Set folder = fso.GetFolder(workbookPath)
 
-    ' Collect all XML files
+    ' Count XML files first
+    fileCount = 0
     For Each file In folder.Files
         If LCase(fso.GetExtensionName(file.Name)) = "xml" Then
-            xmlFiles.Add file.Name
-            fileDates.Add file.DateLastModified
+            fileCount = fileCount + 1
         End If
     Next file
 
-    ' Sort by date descending (bubble sort - fine for small lists)
-    For i = 1 To xmlFiles.Count - 1
-        For j = i + 1 To xmlFiles.Count
+    ' Handle case with no files
+    lb.Clear
+    If fileCount = 0 Then
+        lb.AddItem "(No XML files found)"
+        Exit Sub
+    End If
+
+    ' Collect all XML files into arrays
+    ReDim fileNames(1 To fileCount)
+    ReDim fileDates(1 To fileCount)
+    i = 1
+    For Each file In folder.Files
+        If LCase(fso.GetExtensionName(file.Name)) = "xml" Then
+            fileNames(i) = file.Name
+            fileDates(i) = file.DateLastModified
+            i = i + 1
+        End If
+    Next file
+
+    ' Sort by date descending (bubble sort)
+    For i = 1 To fileCount - 1
+        For j = i + 1 To fileCount
             If fileDates(j) > fileDates(i) Then
-                ' Swap
-                tempName = xmlFiles(i)
+                ' Swap names
+                tempName = fileNames(i)
+                fileNames(i) = fileNames(j)
+                fileNames(j) = tempName
+                ' Swap dates
                 tempDate = fileDates(i)
-                xmlFiles.Remove i
-                xmlFiles.Add tempName, , , i - 1
-                fileDates.Remove i
-                fileDates.Add tempDate, , , i - 1
-
-                xmlFiles.Remove i
-                xmlFiles.Add xmlFiles(j - 1), , i
-                fileDates.Remove i
-                fileDates.Add fileDates(j - 1), , i
-
-                xmlFiles.Remove j
-                xmlFiles.Add tempName, , j
-                fileDates.Remove j
-                fileDates.Add tempDate, , j
+                fileDates(i) = fileDates(j)
+                fileDates(j) = tempDate
             End If
         Next j
     Next i
 
     ' Populate listbox
-    lb.Clear
-    For i = 1 To xmlFiles.Count
-        lb.AddItem xmlFiles(i)
+    For i = 1 To fileCount
+        lb.AddItem fileNames(i)
     Next i
-
-    If xmlFiles.Count = 0 Then
-        lb.AddItem "(No XML files found)"
-    End If
 
     Exit Sub
 
@@ -203,48 +207,57 @@ Public Sub RefreshSheetList()
 
     Dim ws As Worksheet
     Dim lb As MSForms.ListBox
-    Dim dataSheets As Collection
     Dim sheet As Worksheet
     Dim i As Long, j As Long
+    Dim sheetCount As Long
+    Dim sheetNames() As String
     Dim tempName As String
 
     On Error GoTo ErrorHandler
 
     Set ws = ThisWorkbook.Sheets(1)
     Set lb = ws.OLEObjects("ListBox2").Object
-    Set dataSheets = New Collection
 
-    ' Collect data sheets (all except first sheet)
+    ' Count data sheets (all except first sheet)
+    sheetCount = 0
     For Each sheet In ThisWorkbook.Sheets
         If sheet.Index > 1 Then
-            dataSheets.Add sheet.Name
+            sheetCount = sheetCount + 1
+        End If
+    Next sheet
+
+    ' Handle case with no data sheets
+    lb.Clear
+    If sheetCount = 0 Then
+        lb.AddItem "(No data sheets)"
+        Exit Sub
+    End If
+
+    ' Collect data sheets into array
+    ReDim sheetNames(1 To sheetCount)
+    i = 1
+    For Each sheet In ThisWorkbook.Sheets
+        If sheet.Index > 1 Then
+            sheetNames(i) = sheet.Name
+            i = i + 1
         End If
     Next sheet
 
     ' Sort alphabetically descending (timestamps in name = newest first)
-    For i = 1 To dataSheets.Count - 1
-        For j = i + 1 To dataSheets.Count
-            If dataSheets(j) > dataSheets(i) Then
-                tempName = dataSheets(i)
-                dataSheets.Remove i
-                dataSheets.Add tempName, , , i - 1
-                dataSheets.Remove i
-                dataSheets.Add dataSheets(j - 1), , i
-                dataSheets.Remove j
-                dataSheets.Add tempName, , j
+    For i = 1 To sheetCount - 1
+        For j = i + 1 To sheetCount
+            If sheetNames(j) > sheetNames(i) Then
+                tempName = sheetNames(i)
+                sheetNames(i) = sheetNames(j)
+                sheetNames(j) = tempName
             End If
         Next j
     Next i
 
     ' Populate listbox
-    lb.Clear
-    For i = 1 To dataSheets.Count
-        lb.AddItem dataSheets(i)
+    For i = 1 To sheetCount
+        lb.AddItem sheetNames(i)
     Next i
-
-    If dataSheets.Count = 0 Then
-        lb.AddItem "(No data sheets)"
-    End If
 
     Exit Sub
 
