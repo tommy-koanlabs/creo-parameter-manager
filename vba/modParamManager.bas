@@ -905,7 +905,7 @@ Public Sub ExportXML()
     For row = 3 To lastRow  ' Start at row 3 (row 2 is hidden marker row)
         For Each fieldName In fieldOrder
             ' Find column for this field
-            col = GetColumnForField(dataSheet, fieldName, lastCol)
+            col = GetColumnForField(dataSheet, CStr(fieldName), lastCol)
             If col > 0 Then
                 cellValue = CStr(dataSheet.Cells(row, col).Value)
 
@@ -924,7 +924,7 @@ Public Sub ExportXML()
                 paramNode.appendChild childNode
 
                 ' Add Access=Locked for locked fields
-                If CollectionContains(lockedFields, fieldName) Then
+                If CollectionContains(lockedFields, CStr(fieldName)) Then
                     Set childNode = xmlDoc.createElement("Access")
                     childNode.Text = "Locked"
                     paramNode.appendChild childNode
