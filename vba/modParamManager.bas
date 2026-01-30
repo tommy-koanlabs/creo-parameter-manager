@@ -687,21 +687,21 @@ Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, locked
             fc.Interior.Color = RGB(255, 204, 204) ' Pastel red (matches yellow saturation)
             fc.StopIfTrue = False
 
-        ElseIf isStandardField And isPartialField Then
+        'ElseIf isStandardField And isPartialField Then
             ' === STANDARD FIELD with partial presence (missing in some objects) ===
             ' Green for filled, light grey for missing
 
             ' Rule 1: Non-empty = pastel green
-            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+         '   Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
                 Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))>0")
-            fc.Interior.Color = RGB(204, 255, 204) ' Pastel green
-            fc.StopIfTrue = False
+          '  fc.Interior.Color = RGB(204, 255, 204) ' Pastel green
+           ' fc.StopIfTrue = False
 
             ' Rule 2: Empty = light grey (missing parameter)
-            Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
-                Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
-            fc.Interior.Color = RGB(240, 240, 240) ' Light grey
-            fc.StopIfTrue = False
+            'Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, _
+             '   Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
+            'fc.Interior.Color = RGB(240, 240, 240) ' Light grey
+            'fc.StopIfTrue = False
 
         ElseIf Not isStandardField And isPartialField Then
             ' === ADDITIONAL FIELD with partial presence ===
@@ -1070,5 +1070,6 @@ End Sub
 Public Sub btnRefresh_Click()
     RefreshAllLists
 End Sub
+
 
 
