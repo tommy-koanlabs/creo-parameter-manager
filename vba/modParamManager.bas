@@ -566,12 +566,20 @@ Private Sub FormatDataSheet(ws As Worksheet, orderedFields As Collection, locked
                 End If
             Next r
 
-            ' Add conditional formatting for empty cells in this column
+            ' Add conditional formatting for columns with partial field presence
             If hasEmptyCells Then
                 Set cellRng = ws.Range(ws.Cells(2, col), ws.Cells(rowCount, col))
                 cellRng.FormatConditions.Delete ' Clear existing conditions
+
+                ' Rule 1 (Priority 1): Non-empty cells = pale yellow (parameter present/added)
+                Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))>0")
+                fc.Interior.Color = RGB(255, 255, 204) ' Pale yellow for present/added fields
+                fc.StopIfTrue = False
+
+                ' Rule 2 (Priority 2): Empty cells = grey (parameter missing)
                 Set fc = cellRng.FormatConditions.Add(Type:=xlExpression, Formula1:="=LEN(TRIM(" & cellRng.Cells(1, 1).Address(False, False) & "))=0")
                 fc.Interior.Color = RGB(240, 240, 240) ' Light grey for missing fields
+                fc.StopIfTrue = False
             End If
         End If
     Next col

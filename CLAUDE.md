@@ -67,10 +67,12 @@ PTC_WM_NAME | CAGE_CODE | DESCRIPTION_1 | A | E
   - Typically `PTC_WM_NAME` is locked (identifies the CAD object)
   - Additional fields may also be locked depending on Creo configuration
   - Lock status is preserved during export
-- **Missing fields**: Fields that don't exist in all CAD objects have conditional formatting
-  - Empty cells are displayed with light grey background
-  - When user enters a value, grey background automatically disappears
-  - Allows adding parameters to individual objects
+- **Partial field presence** (parameter exists in some objects but not others):
+  - Empty cells (parameter missing): Light grey background
+  - Non-empty cells (parameter present or user-added): Pale yellow background
+  - When user enters a value in a grey cell, it automatically turns pale yellow
+  - Visual indicators: Grey = missing, Yellow = present/added, No color = field exists in all objects
+  - Allows adding parameters to individual objects while maintaining clear visual status
 - **All cells**: Formatted as text to prevent Excel from misinterpreting values
 
 ## Implementation Architecture

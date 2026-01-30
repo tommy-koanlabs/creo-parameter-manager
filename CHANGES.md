@@ -47,19 +47,22 @@ This ensures fields are added with both value and key, allowing proper duplicate
 - Updated `ExportXML()` to detect locked columns via `Columns(col).Locked`
 - Changed conditional from `If fieldName = "PTC_WM_NAME"` to `If CollectionContains(lockedFields, fieldName)`
 
-### 4. Conditional Formatting for Missing Fields
-**New Feature**: When a field doesn't exist in all CAD objects, empty cells are automatically highlighted.
+### 4. Conditional Formatting for Partial Field Presence
+**New Feature**: When a field exists in some CAD objects but not others, cells are color-coded to show status.
 
 **Behavior**:
-- Cells with missing values display with grey background
-- When user enters a value, grey automatically disappears
-- Allows users to easily identify and add missing parameters
-- Uses Excel conditional formatting (formula-based)
+- **Grey background**: Parameter missing from this object (empty cell)
+- **Pale yellow background**: Parameter present in this object (either from original data or user-added)
+- **No background**: Field exists in all objects (normal column)
+- When user enters a value in a grey cell, it automatically turns pale yellow
+- Visual status makes it easy to identify missing parameters and track additions
 
 **Implementation**:
-- Added logic in `FormatDataSheet()` to detect columns with empty cells
-- Applies conditional formatting: `=LEN(TRIM(cell))=0`
-- Grey background only appears when cell is empty
+- Added logic in `FormatDataSheet()` to detect columns with empty cells (partial field presence)
+- Applies two conditional formatting rules per affected column:
+  - Rule 1 (Priority 1): `=LEN(TRIM(cell))>0` → Pale yellow (RGB 255, 255, 204)
+  - Rule 2 (Priority 2): `=LEN(TRIM(cell))=0` → Light grey (RGB 240, 240, 240)
+- Rules apply only to columns where some objects have the field and others don't
 
 ---
 
@@ -68,9 +71,20 @@ This ensures fields are added with both value and key, allowing proper duplicate
 Updated `CLAUDE.md` to reflect:
 - Clarified that "additional fields" excludes priority fields already added
 - Documented dynamic locked column behavior
-- Documented conditional formatting for missing fields
+- Documented conditional formatting for partial field presence (grey/yellow indicators)
 - Updated validation rules to mention preserved lock status
 - Added `DetectLockedFields` to VBA module structure table
+
+## Edge Cases Handled
+
+1. **Missing standard fields**: Code correctly handles situations where priority fields (CAGE_CODE, PART_NUMBER, etc.) are missing from the XML entirely
+   - `OrderFieldsByPriority` only adds priority fields if they exist in `fieldNames`
+   - No errors or blank columns for missing standard fields
+
+2. **Partial field presence**: Handles parameters that exist in some objects but not others
+   - Empty cells for missing parameters are left blank during import
+   - Conditional formatting provides visual indicators (grey = missing, yellow = present/added)
+   - Users can add parameters to individual objects by filling in grey cells
 
 ---
 
