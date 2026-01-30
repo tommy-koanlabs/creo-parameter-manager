@@ -819,7 +819,7 @@ Public Sub ExportXML()
     Dim outputXmlPath As String
     Dim row As Long, col As Long
     Dim lastRow As Long, lastCol As Long
-    Dim fieldName As String
+    Dim fieldName As Variant
     Dim cellValue As String
     Dim blankWarnings As String
     Dim proceedExport As VbMsgBoxResult
