@@ -819,7 +819,7 @@ Public Sub ExportXML()
     Dim outputXmlPath As String
     Dim row As Long, col As Long
     Dim lastRow As Long, lastCol As Long
-    Dim fieldName As String
+    Dim fieldName As Variant
     Dim cellValue As String
     Dim blankWarnings As String
     Dim proceedExport As VbMsgBoxResult
@@ -902,10 +902,10 @@ Public Sub ExportXML()
     xmlDoc.appendChild rootNode
 
     ' Write parameters in alphabetical order within each CAD object group
-    For row = 2 To lastRow
+    For row = 3 To lastRow  ' Start at row 3 (row 2 is hidden marker row)
         For Each fieldName In fieldOrder
             ' Find column for this field
-            col = GetColumnForField(dataSheet, fieldName, lastCol)
+            col = GetColumnForField(dataSheet, CStr(fieldName), lastCol)
             If col > 0 Then
                 cellValue = CStr(dataSheet.Cells(row, col).Value)
 
@@ -924,7 +924,7 @@ Public Sub ExportXML()
                 paramNode.appendChild childNode
 
                 ' Add Access=Locked for locked fields
-                If CollectionContains(lockedFields, fieldName) Then
+                If CollectionContains(lockedFields, CStr(fieldName)) Then
                     Set childNode = xmlDoc.createElement("Access")
                     childNode.Text = "Locked"
                     paramNode.appendChild childNode
@@ -946,7 +946,7 @@ Public Sub ExportXML()
     ' Refresh XML list
     RefreshXMLFileList
 
-    MsgBox "Exported " & (lastRow - 1) & " CAD objects to: " & vbCrLf & outputXmlPath, vbInformation
+    MsgBox "Exported " & (lastRow - 2) & " CAD objects to: " & vbCrLf & outputXmlPath, vbInformation
 
     Exit Sub
 
@@ -974,7 +974,7 @@ Private Function ValidateExportData(ws As Worksheet, headers As Collection, last
 
         If col > 0 Then
             blankCount = 0
-            For row = 2 To lastRow
+            For row = 3 To lastRow  ' Start at row 3 (row 2 is hidden marker row)
                 cellValue = Trim(CStr(ws.Cells(row, col).Value))
                 If cellValue = "" Then
                     blankCount = blankCount + 1
